@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Industrial Engineering Portfolio</title>
+    <title>Sawon M. Portfolio</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -16,6 +16,9 @@
 
     <!-- GSAP (Required for Chroma Grid) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <!-- Smooth Scrollbar -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/smooth-scrollbar/8.8.4/smooth-scrollbar.js"></script>
 
     <!-- Model Viewer (For 3D GLB files) -->
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
@@ -77,8 +80,24 @@
             background: #020617; /* Solid dark base */
             color: rgba(255, 255, 255, 0.9);
             min-height: 100vh;
-            overflow-x: hidden; /* Prevent horizontal scroll */
-            padding-bottom: 100px; /* Space for dock */
+            /* overflow-x: hidden;  <-- Removed, handled by smooth-scrollbar container */
+            /* padding-bottom: 100px; <-- Removed, padding applied inside scroll container */
+            
+            /* Crucial for smooth scrollbar */
+            height: 100vh;
+            overflow: hidden; 
+        }
+
+        /* Smooth Scrollbar Customization */
+        .scrollbar-track {
+            background: transparent !important;
+        }
+        .scrollbar-thumb {
+            background: rgba(56, 189, 248, 0.3) !important; /* Industrial Cyan */
+            border-radius: 10px !important;
+        }
+        .scrollbar-thumb:hover {
+            background: rgba(56, 189, 248, 0.6) !important;
         }
 
         /* --- FLOATING LINES BACKGROUND (Layer 1) --- */
@@ -88,23 +107,9 @@
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: -2; /* Behind Light Rays */
+            z-index: -2; 
             overflow: hidden;
             pointer-events: auto; 
-        }
-
-        /* --- LIGHT RAYS BACKGROUND (Layer 2 - Overlay) --- */
-        .light-rays-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 3; /* On top of content for the "God Ray" effect */
-            pointer-events: none; /* Let clicks pass through */
-            overflow: hidden;
-            mix-blend-mode: screen; /* Blends nicely with dark background */
-            opacity: 0.6; /* Adjust transparency */
         }
 
         /* --- DOCK STYLES --- */
@@ -132,7 +137,6 @@
             backdrop-filter: blur(8px);
             border-radius: 1rem;
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-            /* Removed simple border, replaced with gradient border below */
         }
 
         /* Gradient Border Style (Same as Project Cards) */
@@ -369,6 +373,7 @@
             transform-style: preserve-3d;
             transform: rotateX(-15deg) rotateY(-25deg);
             transition: transform 0.1s ease-out;
+            will-change: transform;
         }
 
         /* Make Cube faces look like glass too */
@@ -389,6 +394,10 @@
             overflow: hidden;
             backface-visibility: hidden; 
             border-radius: 32px; /* Added bevel to corners */
+        }
+
+        .cube-face.front {
+            border: 2px solid white;
         }
 
         .cube-face img {
@@ -448,7 +457,7 @@
 
         .chroma-card {
             position: relative;
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(255, 255, 255, 0.05); /* Decreased transparency */
             border-radius: 1.5rem;
             padding: 1px; /* Space for gradient border */
             overflow: hidden;
@@ -456,6 +465,8 @@
             transition: transform 0.3s ease;
             display: flex;
             flex-direction: column;
+            backdrop-filter: blur(32px); /* Increased from 24px */
+            -webkit-backdrop-filter: blur(32px); /* Increased from 24px */
         }
         
         .chroma-card:hover {
@@ -504,8 +515,14 @@
 
         /* Inner content wrapper */
         .chroma-content {
-            background: rgba(15, 23, 42, 0.6); /* Dark inner background */
-            backdrop-filter: blur(10px);
+            background: rgba(15, 23, 42, 0.7); /* Decreased transparency */
+            /* Added Grid Line Pattern */
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+
+            backdrop-filter: blur(32px); 
             border-radius: 1.5rem;
             height: 100%;
             width: 100%;
@@ -605,6 +622,105 @@
             background-size: 30px 30px;
             box-shadow: 0 0 20px rgba(56, 189, 248, 0.1);
         }
+
+        /* --- TARGET CURSOR STYLES --- */
+        /* Allow default cursor to be visible */
+        /* body.custom-cursor-active,
+        body.custom-cursor-active * {
+            cursor: none !important;
+        } */
+
+        .target-cursor-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 0;
+            pointer-events: none;
+            z-index: 10000; /* Highest z-index */
+            mix-blend-mode: difference; /* Enables dynamic color inversion */
+            transform: translate(-50%, -50%);
+            display: none; /* Hidden by default, toggled by JS */
+        }
+
+        .target-cursor-dot {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 4px;
+            height: 4px;
+            background: #38bdf8; /* Changed from White to Cyan */
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            will-change: transform;
+            box-shadow: 0 0 4px rgba(56, 189, 248, 0.5); /* Added subtle glow */
+        }
+
+        .target-cursor-corner {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 12px;
+            height: 12px;
+            border: 2px solid #38bdf8; /* Changed from White to Cyan */
+            will-change: transform;
+        }
+
+        .corner-tl {
+            transform: translate(-150%, -150%);
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .corner-tr {
+            transform: translate(50%, -150%);
+            border-left: none;
+            border-bottom: none;
+        }
+
+        .corner-br {
+            transform: translate(50%, 50%);
+            border-left: none;
+            border-top: none;
+        }
+
+        .corner-bl {
+            transform: translate(-150%, 50%);
+            border-right: none;
+            border-top: none;
+        }
+        
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            z-index: 10001;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+        
+        .toast {
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(10px);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            border-left: 4px solid #38bdf8;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transform: translateX(100%);
+            transition: transform 0.3s ease-out;
+            pointer-events: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            max-width: 300px;
+        }
+        
+        .toast.show {
+            transform: translateX(0);
+        }
     </style>
 </head>
 <body class="font-sans relative min-h-screen">
@@ -618,7 +734,7 @@
             </div>
             
             <!-- Name Reveal -->
-            <div id="loader-name">SAWON M.</div>
+            <div id="loader-name">SAWON MUKHERJEE</div>
         </div>
     </div>
 
@@ -627,9 +743,6 @@
 
     <!-- NEW: Floating Lines Background (Layer 1) -->
     <div id="floating-lines-container" class="floating-lines-container"></div>
-
-    <!-- NEW: Light Rays Background (Layer 2 - Overlay) -->
-    <div id="light-rays-container" class="light-rays-container"></div>
 
     <!-- Ambient Background Orbs -->
     <div class="orb bg-blue-900 w-[800px] h-[800px] top-[-200px] left-[20%] animate-pulse"></div>
@@ -654,7 +767,7 @@
 
             <a href="#certificates" class="dock-item">
                 <i data-lucide="award" class="dock-icon"></i>
-                <span class="dock-label">Certificate</span>
+                <span class="dock-label">Certificates</span>
             </a>
 
             <a href="#contact" class="dock-item">
@@ -663,113 +776,185 @@
             </a>
         </div>
     </div>
+    
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
 
-    <!-- Hero Section -->
-    <section id="home" class="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-20">
-        
-        <!-- 1. Hero Image Box (3D Cube) -->
-        <div class="relative z-20 animate-float">
-            <div class="cube-wrapper">
-                <div class="cube">
-                    <!-- Front Face: User Image or Fallback -->
-                    <div class="cube-face front">
-                        <img src="IMG_0021.JPG" alt="Profile Photo" onerror="this.src='https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80'">
-                    </div>
-                    
-                    <!-- Back Face: CV/Resume Link -->
-                    <div class="cube-face back" onclick="document.getElementById('resume-modal').classList.remove('hidden')" style="cursor: pointer;">
-                        <div class="blueprint-grid text-center p-4 hover:bg-white/10 transition-colors duration-300">
-                            <i data-lucide="file-text" class="w-16 h-16 mb-4 text-white drop-shadow-lg"></i>
-                            <span class="text-base tracking-widest text-white font-mono">CV / RESUME</span>
-                            <span class="text-xs text-industrial-highlight mt-2 font-mono border border-industrial-highlight px-2 py-1 rounded">DOWNLOAD</span>
-                        </div>
-                    </div>
-                    
-                    <!-- Side Faces -->
-                    <div class="cube-face right"><div class="blueprint-grid"><span class="text-xs text-white/50">RIGHT VIEW</span></div></div>
-                    <div class="cube-face left"><div class="blueprint-grid"><span class="text-xs text-white/50">LEFT VIEW</span></div></div>
-                    <div class="cube-face top"><div class="blueprint-grid"><span class="text-xs text-white/50">TOP VIEW</span></div></div>
-                    <div class="cube-face bottom"><div class="blueprint-grid"><span class="text-xs text-white/50">BOTTOM VIEW</span></div></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 2. Top Label -->
-        <div class="text-center z-20 mt-8 space-y-2">
-            <p class="text-industrial-accent text-xs md:text-sm font-mono uppercase tracking-[0.3em] animate-pulse">
-                Industrial Engineering Student
-            </p>
+    <!-- MAIN SCROLL CONTAINER (FOR SMOOTH SCROLLBAR) -->
+    <main id="main-scroll-container" style="width: 100%; height: 100vh;">
+        <!-- Hero Section -->
+        <section id="home" class="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-20">
             
-            <!-- 3. Name (Main Title) -->
-            <h1 class="text-5xl md:text-7xl lg:text-8xl text-white font-serif font-bold tracking-tight leading-none drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]">
-                SAWON M.
-            </h1>
-
-            <!-- 4. Short Description -->
-            <p class="text-glass-textMuted text-xs md:text-sm font-mono uppercase tracking-[0.2em] mt-4 max-w-2xl mx-auto">
-                3D CAD Modeling • Simulation • Optimization
-            </p>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="flex items-center justify-center w-full mt-12 z-20">
-            <button onclick="document.getElementById('resume-modal').classList.remove('hidden')" class="group relative px-8 py-3 overflow-hidden rounded-full bg-transparent border border-white/30 text-white transition-all hover:border-industrial-accent hover:text-industrial-accent cursor-pointer">
-                <span class="absolute top-0 left-0 w-full h-full bg-white/5 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-500"></span>
-                <span class="relative text-sm font-medium tracking-widest uppercase flex items-center">
-                    CV / Resume <i data-lucide="file-text" class="ml-2 w-4 h-4"></i>
-                </span>
-            </button>
-        </div>
-
-        <!-- Scroll Indicator -->
-        <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce opacity-50">
-            <span class="block w-[1px] h-12 bg-gradient-to-b from-transparent via-white to-transparent"></span>
-        </div>
-    </section>
-
-    <!-- Projects Section -->
-    <section id="projects" class="py-24 relative">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col md:flex-row justify-between items-end mb-12">
-                <div>
-                    <p class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-white sm:text-4xl drop-shadow-lg">
-                        SolidWorks Projects
-                    </p>
-                </div>
-                <div class="mt-4 md:mt-0">
-                    <span class="text-glass-textMuted text-sm font-mono bg-white/5 px-3 py-1 rounded-full border border-white/10 backdrop-blur-sm">Recent works from university & personal labs</span>
+            <!-- 1. Hero Image Box (3D Cube) -->
+            <div class="relative z-20 animate-float">
+                <div class="cube-wrapper">
+                    <div class="cube">
+                        <!-- Front Face: User Image or Fallback -->
+                        <div class="cube-face front">
+                            <!-- Used a high quality Unsplash fallback for immediate visual -->
+                            <img src="C:\Users\sawon\Desktop\New folder\me.jpg" alt="Profile Photo">
+                        </div>
+                        
+                        <!-- Back Face: CV/Resume Link -->
+                        <div class="cube-face back" onclick="document.getElementById('resume-modal').classList.remove('hidden')" style="cursor: pointer;">
+                            <div class="blueprint-grid text-center p-4 hover:bg-white/10 transition-colors duration-300">
+                                <i data-lucide="file-text" class="w-16 h-16 mb-4 text-white drop-shadow-lg"></i>
+                                <span class="text-base tracking-widest text-white font-mono">CV / RESUME</span>
+                                <span class="text-xs text-industrial-highlight mt-2 font-mono border border-industrial-highlight px-2 py-1 rounded">DOWNLOAD</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Side Faces -->
+                        <div class="cube-face right"><div class="blueprint-grid"><span class="text-xs text-white/50">RIGHT VIEW</span></div></div>
+                        <div class="cube-face left"><div class="blueprint-grid"><span class="text-xs text-white/50">LEFT VIEW</span></div></div>
+                        <div class="cube-face top"><div class="blueprint-grid"><span class="text-xs text-white/50">TOP VIEW</span></div></div>
+                        <div class="cube-face bottom"><div class="blueprint-grid"><span class="text-xs text-white/50">BOTTOM VIEW</span></div></div>
+                    </div>
                 </div>
             </div>
 
-            <!-- DYNAMIC PROJECTS CONTAINER -->
+            <!-- 2. Top Label -->
+            <div class="text-center z-20 mt-8 space-y-2">
+                <p class="text-industrial-accent text-xs md:text-sm font-mono uppercase tracking-[0.3em] animate-pulse">
+                    Studying Industrial Engineering and Management.
+                </p>
+                
+                <!-- 3. Name (Main Title) -->
+                <h1 class="text-5xl md:text-7xl lg:text-8xl text-white font-serif font-bold tracking-tight leading-none drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]">
+                    SAWON MUKHERJEE
+                </h1>
+
+                <!-- 4. Short Description -->
+                <p class="text-glass-textMuted text-xs md:text-sm font-mono uppercase tracking-[0.2em] mt-4 max-w-2xl mx-auto">
+                    3D CAD Modeling • Simulation • Optimization
+                </p>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center justify-center w-full mt-12 z-20">
+                <button onclick="document.getElementById('resume-modal').classList.remove('hidden')" class="group relative px-8 py-3 overflow-hidden rounded-full bg-transparent border border-white/30 text-white transition-all hover:border-industrial-accent hover:text-industrial-accent cursor-pointer">
+                    <span class="absolute top-0 left-0 w-full h-full bg-white/5 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-500"></span>
+                    <span class="relative text-sm font-medium tracking-widest uppercase flex items-center">
+                        CV / Resume <i data-lucide="file-text" class="ml-2 w-4 h-4"></i>
+                    </span>
+                </button>
+            </div>
+
+            <!-- Scroll Indicator -->
+            <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce opacity-50">
+                <span class="block w-[1px] h-12 bg-gradient-to-b from-transparent via-white to-transparent"></span>
+            </div>
+        </section>
+
+        <!-- Projects Section -->
+        <section id="projects" class="py-24 relative">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex flex-col md:flex-row justify-between items-end mb-12">
+                    <div>
+                        <p class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-white sm:text-4xl drop-shadow-lg">
+                            SolidWorks Projects
+                        </p>
+                    </div>
+                    <div class="mt-4 md:mt-0">
+                        <span class="text-glass-textMuted text-sm font-mono bg-white/5 px-3 py-1 rounded-full border border-white/10 backdrop-blur-sm">Recent works from university & personal labs</span>
+                    </div>
+                </div>
+
+                <!-- DYNAMIC PROJECTS CONTAINER -->
             <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 <!-- JS will render cards here -->
             </div>
             
             <div class="mt-12 text-center">
-                <a href="#" class="inline-flex items-center px-8 py-3 border border-white/20 shadow-lg text-base font-medium rounded-2xl text-gray-200 glass-panel hover:bg-white/10 hover:text-white hover:scale-105 transition-all backdrop-blur-md">
+                <a href="https://grabcad.com/sawon.mukherjee-1" class="inline-flex items-center px-8 py-3 border border-white/20 shadow-lg text-base font-medium rounded-2xl text-gray-200 glass-panel hover:bg-white/10 hover:text-white hover:scale-105 transition-all" style="backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px);">
                     <i data-lucide="github" class="mr-2 w-5 h-5"></i>
-                    See More on GitHub / GrabCAD
+                    See more on GrabCAD
                 </a>
             </div>
         </div>
     </section>
 
     <!-- Certificates Section -->
-    <section id="certificates" class="py-24 relative overflow-hidden">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div class="lg:text-center mb-16">
-                <p class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-white sm:text-4xl drop-shadow-lg">
-                    Certifications & Achievements
-                </p>
-            </div>
+        <section id="certificates" class="py-24 relative overflow-hidden">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                <div class="lg:text-center mb-16">
+                    <p class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-white sm:text-4xl drop-shadow-lg">
+                        Certifications & Achievements
+                    </p>
+                </div>
 
-            <!-- CHROMA GRID for Certificates -->
-            <div id="chroma-container" class="chroma-grid">
-                <!-- Cards are rendered via JS in initChromaGrid() -->
+                <!-- CHROMA GRID for Certificates -->
+                <div id="chroma-container" class="chroma-grid">
+                    <!-- Cards are rendered via JS in initChromaGrid() -->
+                </div>
             </div>
-        </div>
-    </section>
+        </section>
+
+        <!-- Contact Section -->
+        <section id="contact" class="py-24 relative border-t border-white/5" style="padding-bottom: 150px;">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-16">
+                    <div>
+                        <h2 class="text-base text-industrial-accent font-semibold tracking-wide uppercase font-mono drop-shadow-md">Contact</h2>
+                        <p class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-white sm:text-4xl mb-6 drop-shadow-lg">
+                            Let's Build Something
+                        </p>
+                        <p class="text-lg text-glass-textMuted mb-8">
+                            Looking for an internship, project collaboration, or full-time opportunity? I'm always open to discussing new industrial engineering challenges.
+                        </p>
+                        
+                        <div class="space-y-6">
+                            <div class="flex items-center group">
+                                <div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mr-4 group-hover:bg-industrial-accent/20 transition-colors border border-white/10">
+                                    <i data-lucide="mail" class="w-5 h-5 text-industrial-accent"></i>
+                                </div>
+                                <span class="text-gray-300 group-hover:text-white transition-colors">sawonmukherjee1@gmail.com</span>
+                            </div>
+                            <div class="flex items-center group">
+                                <div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mr-4 group-hover:bg-industrial-accent/20 transition-colors border border-white/10">
+                                    <i data-lucide="map-pin" class="w-5 h-5 text-industrial-accent"></i>
+                                </div>
+                                <span class="text-gray-300 group-hover:text-white transition-colors">Rangpur, Bangladesh</span>
+                            </div>
+                            <div class="flex items-center group">
+                                <div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mr-4 group-hover:bg-industrial-accent/20 transition-colors border border-white/10">
+                                    <i data-lucide="linkedin" class="w-5 h-5 text-industrial-accent"></i>
+                                </div>
+                                <span class="text-gray-300 group-hover:text-white transition-colors">linkedin.com/in/sawonmukherjee</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-8 flex space-x-4">
+                            <a href="https://www.linkedin.com/in/sawonmukherjee/" class="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-industrial-accent hover:text-white hover:-translate-y-1 transition-all text-gray-400 backdrop-blur-sm shadow-lg">
+                                <i data-lucide="linkedin" class="w-5 h-5"></i>
+                            </a>
+                            <a href="https://github.com/Sawon76" class="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-industrial-accent hover:text-white hover:-translate-y-1 transition-all text-gray-400 backdrop-blur-sm shadow-lg">
+                                <i data-lucide="github" class="w-5 h-5"></i>
+                            </a>
+                            <a href="https://www.instagram.com/sawon.mukherjee.76/" class="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-industrial-accent hover:text-white hover:-translate-y-1 transition-all text-gray-400 backdrop-blur-sm shadow-lg">
+                                <i data-lucide="instagram" class="w-5 h-5"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Contact Form with Tech Grid Style -->
+                    <!-- Replaced custom form with Fillout Form Iframe -->
+                    <div class="glass-panel rounded-3xl relative tech-panel overflow-hidden h-[650px] w-full">
+                        <iframe 
+                            src="https://forms.fillout.com/t/3MJjjEQYdcus" 
+                            width="100%" 
+                            style="height: calc(100% + 60px);" 
+                            frameborder="0" 
+                            marginheight="0" 
+                            marginwidth="0" 
+                            title="Contact Me"
+                            class="w-full"
+                        >Loading…</iframe>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
 
     <!-- Resume Modal -->
     <div id="resume-modal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
@@ -789,11 +974,11 @@
                                     Choose the format you would like to download.
                                 </p>
                                 <div class="mt-4 space-y-3">
-                                    <a href="#" class="flex items-center justify-between w-full px-4 py-3 glass-input rounded-xl hover:bg-white/10 transition-colors text-gray-200">
+                                    <a href="https://drive.google.com/file/d/1uXfkZdNjgboP_TI6CVHeNDKTdRF2imZg/view?usp=sharing" class="flex items-center justify-between w-full px-4 py-3 glass-input rounded-xl hover:bg-white/10 transition-colors text-gray-200">
                                         <span>Full CV (Academic)</span>
                                         <i data-lucide="download" class="w-4 h-4 text-industrial-accent"></i>
                                     </a>
-                                    <a href="#" class="flex items-center justify-between w-full px-4 py-3 glass-input rounded-xl hover:bg-white/10 transition-colors text-gray-200">
+                                    <a href="https://drive.google.com/file/d/1uXfkZdNjgboP_TI6CVHeNDKTdRF2imZg/view?usp=sharing" class="flex items-center justify-between w-full px-4 py-3 glass-input rounded-xl hover:bg-white/10 transition-colors text-gray-200">
                                         <span>Resume (1 Page Summary)</span>
                                         <i data-lucide="download" class="w-4 h-4 text-industrial-accent"></i>
                                     </a>
@@ -838,7 +1023,7 @@
                         poster="https://via.placeholder.com/400x300.png?text=Loading+3D+Model..."
                         class="w-full h-full">
                         <div class="absolute bottom-4 right-4 bg-black/50 backdrop-blur-sm rounded-lg px-3 py-2 text-xs text-white border border-white/10 pointer-events-none">
-                            Left Click to Rotate • Scroll to Zoom
+                            Left Click to Rotate • Right Press & Hold to Drag • Scroll to Zoom
                         </div>
                     </model-viewer>
                 </div>
@@ -867,81 +1052,29 @@
         </div>
     </div>
 
-    <!-- Contact Section -->
-    <section id="contact" class="py-24 relative border-t border-white/5">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-16">
-                <div>
-                    <h2 class="text-base text-industrial-accent font-semibold tracking-wide uppercase font-mono drop-shadow-md">Contact</h2>
-                    <p class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-white sm:text-4xl mb-6 drop-shadow-lg">
-                        Let's Build Something
-                    </p>
-                    <p class="text-lg text-glass-textMuted mb-8">
-                        Looking for an internship, project collaboration, or full-time opportunity? I'm always open to discussing new industrial engineering challenges.
-                    </p>
-                    
-                    <div class="space-y-6">
-                        <div class="flex items-center group">
-                            <div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mr-4 group-hover:bg-industrial-accent/20 transition-colors border border-white/10">
-                                <i data-lucide="mail" class="w-5 h-5 text-industrial-accent"></i>
-                            </div>
-                            <span class="text-gray-300 group-hover:text-white transition-colors">student@university.edu</span>
-                        </div>
-                        <div class="flex items-center group">
-                            <div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mr-4 group-hover:bg-industrial-accent/20 transition-colors border border-white/10">
-                                <i data-lucide="map-pin" class="w-5 h-5 text-industrial-accent"></i>
-                            </div>
-                            <span class="text-gray-300 group-hover:text-white transition-colors">City, State, Country</span>
-                        </div>
-                        <div class="flex items-center group">
-                            <div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mr-4 group-hover:bg-industrial-accent/20 transition-colors border border-white/10">
-                                <i data-lucide="linkedin" class="w-5 h-5 text-industrial-accent"></i>
-                            </div>
-                            <span class="text-gray-300 group-hover:text-white transition-colors">linkedin.com/in/yourname</span>
-                        </div>
-                    </div>
-
-                    <div class="mt-8 flex space-x-4">
-                        <a href="#" class="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-industrial-accent hover:text-white hover:-translate-y-1 transition-all text-gray-400 backdrop-blur-sm shadow-lg">
-                            <i data-lucide="linkedin" class="w-5 h-5"></i>
-                        </a>
-                        <a href="#" class="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-industrial-accent hover:text-white hover:-translate-y-1 transition-all text-gray-400 backdrop-blur-sm shadow-lg">
-                            <i data-lucide="github" class="w-5 h-5"></i>
-                        </a>
-                        <a href="#" class="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-industrial-accent hover:text-white hover:-translate-y-1 transition-all text-gray-400 backdrop-blur-sm shadow-lg">
-                            <i data-lucide="instagram" class="w-5 h-5"></i>
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Contact Form with Tech Grid Style -->
-                <div class="glass-panel p-8 rounded-3xl relative tech-panel">
-                    <form class="space-y-6">
-                        <div>
-                            <label for="name" class="block text-sm font-medium text-gray-300 mb-2">Name</label>
-                            <input type="text" name="name" id="name" class="w-full glass-input rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:ring-2 focus:ring-industrial-accent/50 transition-all">
-                        </div>
-                        <div>
-                            <label for="email" class="block text-sm font-medium text-gray-300 mb-2">Email</label>
-                            <input type="email" name="email" id="email" class="w-full glass-input rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:ring-2 focus:ring-industrial-accent/50 transition-all">
-                        </div>
-                        <div>
-                            <label for="message" class="block text-sm font-medium text-gray-300 mb-2">Message</label>
-                            <textarea name="message" id="message" rows="4" class="w-full glass-input rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:ring-2 focus:ring-industrial-accent/50 transition-all"></textarea>
-                        </div>
-                        <button type="button" class="w-full flex justify-center py-4 px-4 border border-white/20 rounded-xl shadow-lg text-sm font-bold text-white bg-transparent hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 transition-all transform hover:scale-[1.02]">
-                            Send Message
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </section>
-
     <!-- Scripts -->
     <script>
         // Initialize Lucide Icons
         lucide.createIcons();
+        
+        // Toast Notification Function
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            
+            container.appendChild(toast);
+            
+            // Trigger animation
+            setTimeout(() => toast.classList.add('show'), 10);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
 
         // Mobile Menu Toggle
         function toggleMobileMenu() {
@@ -969,7 +1102,7 @@
         // --- PDF VIEWER LOGIC ---
         function openPdfViewer(url) {
             if (!url || url === '#' || url.includes('PASTE_YOUR')) {
-                alert("Please replace 'PASTE_YOUR_GOOGLE_DRIVE_LINK_HERE' with your actual Google Drive link in the HTML code.");
+                showToast("Please update the Google Drive link in the HTML code.");
                 return;
             }
 
@@ -1105,7 +1238,7 @@
                 handle: "ID: C-123456789",
                 borderColor: "#38bdf8", // Cyan
                 gradient: "linear-gradient(145deg, #38bdf8, #000)",
-                url: "https://drive.google.com/file/d/1-g9JO7JZScvqjMYJ81zi3kUgBnYxsISd/view?usp=sharing"
+                url: "PASTE_YOUR_GOOGLE_DRIVE_LINK_HERE" // Placeholder to trigger toast
             },
             {
                 icon: "shield-check",
@@ -1114,7 +1247,7 @@
                 handle: "Active",
                 borderColor: "#6366f1", // Indigo
                 gradient: "linear-gradient(180deg, #6366f1, #000)",
-                url: "https://drive.google.com/file/d/1-g9JO7JZScvqjMYJ81zi3kUgBnYxsISd/view?usp=sharing"
+                url: "PASTE_YOUR_GOOGLE_DRIVE_LINK_HERE"
             },
             {
                 icon: "file-badge",
@@ -1123,7 +1256,7 @@
                 handle: "Active",
                 borderColor: "#3b82f6", // Blue
                 gradient: "linear-gradient(145deg, #3b82f6, #000)",
-                url: "https://drive.google.com/file/d/1-g9JO7JZScvqjMYJ81zi3kUgBnYxsISd/view?usp=sharing"
+                url: "PASTE_YOUR_GOOGLE_DRIVE_LINK_HERE"
             },
             {
                 icon: "book-open",
@@ -1132,7 +1265,7 @@
                 handle: "Completed",
                 borderColor: "#10b981", // Emerald
                 gradient: "linear-gradient(145deg, #10b981, #000)",
-                url: "https://drive.google.com/file/d/1-g9JO7JZScvqjMYJ81zi3kUgBnYxsISd/view?usp=sharing"
+                url: "PASTE_YOUR_GOOGLE_DRIVE_LINK_HERE"
             }
         ];
 
@@ -1281,33 +1414,58 @@
             });
         }
 
-        // Cube Interaction
+        // Cube Interaction (Updated for Smoothness)
         const initCubeInteraction = () => {
             const cube = document.querySelector('.cube'); 
             if (!cube) return;
 
+            // Remove CSS transition to prevent conflict with JS loop
+            cube.style.transition = 'none';
+
             let windowHalfX = window.innerWidth / 2;
             let windowHalfY = window.innerHeight / 2;
+
+            // State for smooth animation
+            // Start with initial rotation values (matches CSS)
+            let targetRotX = -15; 
+            let targetRotY = -25;
+            let currentRotX = -15;
+            let currentRotY = -25;
+
+            // Configuration
+            const ease = 0.05; // Lower = smoother/slower catchup (0.01 to 0.1 range)
+            const sensitivity = 0.05; // Lower = slower rotation speed (0.01 to 0.1 range)
 
             document.addEventListener('mousemove', (event) => {
                 const mouseX = (event.clientX - windowHalfX);
                 const mouseY = (event.clientY - windowHalfY);
                 
-                // Calculate rotation with clamping (-45 to +45 degrees)
-                let rotX = -(mouseY * 0.1); 
-                let rotY = (mouseX * 0.1);
+                // Calculate target rotation based on mouse pos
+                let rotX = -(mouseY * sensitivity); 
+                let rotY = (mouseX * sensitivity);
 
-                // Clamp values
-                rotX = Math.max(-45, Math.min(45, rotX));
-                rotY = Math.max(-45, Math.min(45, rotY));
-
-                cube.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+                // Clamp values (-45 to +45 degrees)
+                targetRotX = Math.max(-45, Math.min(45, rotX));
+                targetRotY = Math.max(-45, Math.min(45, rotY));
             });
             
             window.addEventListener('resize', () => {
                 windowHalfX = window.innerWidth / 2;
                 windowHalfY = window.innerHeight / 2;
             });
+
+            // Animation Loop
+            const animateCube = () => {
+                // Linear Interpolation (Lerp) for smoothness
+                currentRotX += (targetRotX - currentRotX) * ease;
+                currentRotY += (targetRotY - currentRotY) * ease;
+
+                cube.style.transform = `rotateX(${currentRotX}deg) rotateY(${currentRotY}deg)`;
+
+                requestAnimationFrame(animateCube);
+            };
+
+            animateCube();
         };
 
         // --- FLOATING LINES BACKGROUND (Vanilla Three.js) ---
@@ -1473,7 +1631,7 @@
                             col += lineCol * wave(
                                 ruv + vec2(middleLineDistance * fi + middleWavePosition.x, middleWavePosition.y),
                                 2.0 + 0.15 * fi, baseUv, mouseUv, interactive
-                            ) * 0.5;
+                            ) * 0.5; // Added multiplier to reduce intensity
                         }
                     }
 
@@ -1633,200 +1791,6 @@
             animate();
         }
 
-        // --- NEW: LIGHT RAYS BACKGROUND (OGL Implementation) ---
-        async function initLightRays() {
-            const container = document.getElementById('light-rays-container');
-            if (!container) return;
-
-            try {
-                // Dynamic import OGL to avoid polluting global scope
-                const { Renderer, Program, Mesh, Triangle, Vec2, Vec3 } = await import('https://unpkg.com/ogl');
-
-                const renderer = new Renderer({
-                    dpr: Math.min(window.devicePixelRatio, 2),
-                    alpha: true
-                });
-                
-                const gl = renderer.gl;
-                gl.canvas.style.width = '100%';
-                gl.canvas.style.height = '100%';
-                container.appendChild(gl.canvas);
-
-                const vertex = `
-                    attribute vec2 position;
-                    varying vec2 vUv;
-                    void main() {
-                        vUv = position * 0.5 + 0.5;
-                        gl_Position = vec4(position, 0.0, 1.0);
-                    }
-                `;
-
-                const fragment = `
-                    precision highp float;
-
-                    uniform float iTime;
-                    uniform vec2  iResolution;
-                    uniform vec2  rayPos;
-                    uniform vec2  rayDir;
-                    uniform vec3  raysColor;
-                    uniform float raysSpeed;
-                    uniform float lightSpread;
-                    uniform float rayLength;
-                    uniform float pulsating;
-                    uniform float fadeDistance;
-                    uniform float saturation;
-                    uniform vec2  mousePos;
-                    uniform float mouseInfluence;
-                    uniform float noiseAmount;
-                    uniform float distortion;
-
-                    varying vec2 vUv;
-
-                    float noise(vec2 st) {
-                        return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
-                    }
-
-                    float rayStrength(vec2 raySource, vec2 rayRefDirection, vec2 coord, float seedA, float seedB, float speed) {
-                        vec2 sourceToCoord = coord - raySource;
-                        vec2 dirNorm = normalize(sourceToCoord);
-                        float cosAngle = dot(dirNorm, rayRefDirection);
-
-                        float distortedAngle = cosAngle + distortion * sin(iTime * 2.0 + length(sourceToCoord) * 0.01) * 0.2;
-                        float spreadFactor = pow(max(distortedAngle, 0.0), 1.0 / max(lightSpread, 0.001));
-
-                        float distance = length(sourceToCoord);
-                        float maxDistance = iResolution.x * rayLength;
-                        float lengthFalloff = clamp((maxDistance - distance) / maxDistance, 0.0, 1.0);
-                        
-                        float fadeFalloff = clamp((iResolution.x * fadeDistance - distance) / (iResolution.x * fadeDistance), 0.5, 1.0);
-                        float pulse = pulsating > 0.5 ? (0.8 + 0.2 * sin(iTime * speed * 3.0)) : 1.0;
-
-                        float baseStrength = clamp(
-                            (0.45 + 0.15 * sin(distortedAngle * seedA + iTime * speed)) +
-                            (0.3 + 0.2 * cos(-distortedAngle * seedB + iTime * speed)),
-                            0.0, 1.0
-                        );
-
-                        return baseStrength * lengthFalloff * fadeFalloff * spreadFactor * pulse;
-                    }
-
-                    void main() {
-                        vec2 coord = vec2(gl_FragCoord.x, gl_FragCoord.y); // OGL coords
-                        
-                        vec2 finalRayDir = rayDir;
-                        if (mouseInfluence > 0.0) {
-                            vec2 mouseScreenPos = mousePos * iResolution.xy;
-                            // Flip mouse Y for shader coords if needed, but gl_FragCoord.y is bottom-up
-                            // OGL mouse might need adjusting.
-                            vec2 mouseDirection = normalize(mouseScreenPos - rayPos);
-                            finalRayDir = normalize(mix(rayDir, mouseDirection, mouseInfluence));
-                        }
-
-                        vec4 rays1 = vec4(1.0) * rayStrength(rayPos, finalRayDir, coord, 36.2214, 21.11349, 1.5 * raysSpeed);
-                        vec4 rays2 = vec4(1.0) * rayStrength(rayPos, finalRayDir, coord, 22.3991, 18.0234, 1.1 * raysSpeed);
-
-                        vec4 fragColor = rays1 * 0.5 + rays2 * 0.4;
-
-                        if (noiseAmount > 0.0) {
-                            float n = noise(coord * 0.01 + iTime * 0.1);
-                            fragColor.rgb *= (1.0 - noiseAmount + noiseAmount * n);
-                        }
-
-                        float brightness = 1.0 - (coord.y / iResolution.y);
-                        fragColor.x *= 0.1 + brightness * 0.8;
-                        fragColor.y *= 0.3 + brightness * 0.6;
-                        fragColor.z *= 0.5 + brightness * 0.5;
-
-                        if (saturation != 1.0) {
-                            float gray = dot(fragColor.rgb, vec3(0.299, 0.587, 0.114));
-                            fragColor.rgb = mix(vec3(gray), fragColor.rgb, saturation);
-                        }
-
-                        fragColor.rgb *= raysColor;
-                        gl_FragColor = fragColor;
-                    }
-                `;
-
-                const uniforms = {
-                    iTime: { value: 0 },
-                    iResolution: { value: new Vec2(1, 1) },
-                    rayPos: { value: new Vec2(0, 0) },
-                    rayDir: { value: new Vec2(0, 1) },
-                    raysColor: { value: new Vec3(1, 1, 1) }, // White
-                    raysSpeed: { value: 0.2 },
-                    lightSpread: { value: 0.2 },
-                    rayLength: { value: 2.0 },
-                    pulsating: { value: 0.0 },
-                    fadeDistance: { value: 1.0 },
-                    saturation: { value: 1.0 },
-                    mousePos: { value: new Vec2(0.5, 0.5) },
-                    mouseInfluence: { value: 0.05 },
-                    noiseAmount: { value: 0.0 },
-                    distortion: { value: 0.0 }
-                };
-
-                const geometry = new Triangle(gl);
-                const program = new Program(gl, {
-                    vertex,
-                    fragment,
-                    uniforms
-                });
-                const mesh = new Mesh(gl, { geometry, program });
-
-                // Helpers
-                const getAnchorAndDir = (w, h) => {
-                    // Origin: top-center
-                    const outside = 0.2;
-                    // GL coords: 0,0 is bottom-left.
-                    // Top-center is [w/2, h + offset]
-                    // Ray direction needs to point DOWN: [0, -1]
-                    return { 
-                        anchor: [0.5 * w, (1 + outside) * h], 
-                        dir: [0, -1] 
-                    };
-                };
-
-                const resize = () => {
-                    const width = container.clientWidth;
-                    const height = container.clientHeight;
-                    renderer.setSize(width, height);
-                    const dpr = renderer.dpr;
-                    uniforms.iResolution.value.set(width * dpr, height * dpr);
-                    
-                    const { anchor, dir } = getAnchorAndDir(width * dpr, height * dpr);
-                    uniforms.rayPos.value.set(anchor[0], anchor[1]);
-                    uniforms.rayDir.value.set(dir[0], dir[1]);
-                };
-
-                window.addEventListener('resize', resize);
-                resize();
-
-                // Mouse
-                const mouse = { x: 0.5, y: 0.5 };
-                window.addEventListener('mousemove', (e) => {
-                    mouse.x = e.clientX / window.innerWidth;
-                    mouse.y = 1.0 - (e.clientY / window.innerHeight); // Flip Y for GL
-                });
-
-                // Loop
-                let animationId;
-                const update = (t) => {
-                    animationId = requestAnimationFrame(update);
-                    program.uniforms.iTime.value = t * 0.001;
-                    
-                    // Smooth mouse
-                    const smoothing = 0.1;
-                    uniforms.mousePos.value.lerp(new Vec2(mouse.x, mouse.y), smoothing);
-
-                    renderer.render({ scene: mesh });
-                };
-                animationId = requestAnimationFrame(update);
-
-            } catch (err) {
-                console.error("Failed to load Light Rays:", err);
-            }
-        }
-
         // --- LOADING SCREEN LOGIC ---
         const initLoadingScreen = () => {
             const bar = document.getElementById('loader-bar');
@@ -1834,6 +1798,59 @@
             const nameReveal = document.getElementById('loader-name');
             const screen = document.getElementById('loading-screen');
             
+            // Define Hoosh Sound Generator
+            const playHooshSound = () => {
+                try {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    const ctx = new AudioContext();
+                    
+                    // Resume context if suspended (browser policy)
+                    if (ctx.state === 'suspended') {
+                        ctx.resume();
+                    }
+
+                    // Create white noise buffer
+                    const bufferSize = ctx.sampleRate * 2; // 2 seconds buffer
+                    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) {
+                        data[i] = Math.random() * 2 - 1;
+                    }
+
+                    const noise = ctx.createBufferSource();
+                    noise.buffer = buffer;
+
+                    // Create Filter for the "Whoosh" sweep
+                    const filter = ctx.createBiquadFilter();
+                    filter.type = 'lowpass';
+                    filter.Q.value = 1;
+
+                    const gain = ctx.createGain();
+                    
+                    // Connect nodes
+                    noise.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(ctx.destination);
+
+                    const now = ctx.currentTime;
+
+                    // --- SOUND ENVELOPE ---
+                    // 1. Filter Sweep (Low to High freq makes the "Whoosh")
+                    filter.frequency.setValueAtTime(100, now); 
+                    filter.frequency.exponentialRampToValueAtTime(3000, now + 0.8); // Sweep up to 3kHz
+
+                    // 2. Volume Envelope (Fade in -> Fade out)
+                    gain.gain.setValueAtTime(0, now);
+                    gain.gain.linearRampToValueAtTime(0.15, now + 0.2); // Attack
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2); // Long Decay
+
+                    noise.start(now);
+                    noise.stop(now + 1.5);
+                } catch (e) {
+                    // console.warn("Audio autoplay blocked by browser policy", e);
+                }
+            };
+
             let progress = 0;
             const duration = 1500; 
             const intervalTime = duration / 100;
@@ -1851,6 +1868,9 @@
                     setTimeout(() => {
                         barContainer.style.display = 'none';
                         
+                        // PLAY SOUND HERE
+                        playHooshSound();
+
                         // 2. Trigger BlurText Animation
                         nameReveal.style.display = 'block';
                         animateBlurText(nameReveal);
@@ -1912,17 +1932,216 @@
             });
         }
 
+        // --- SMOOTH SCROLLBAR INITIALIZATION ---
+        function initSmoothScroll() {
+            const container = document.querySelector('#main-scroll-container');
+            if (!container) return;
+
+            const scrollbar = Scrollbar.init(container, {
+                damping: 0.05,
+                renderByPixels: true,
+                alwaysShowTracks: false
+            });
+
+            // Connect Dock Links to Smooth Scrollbar
+            document.querySelectorAll('.dock-item, a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    const href = this.getAttribute('href') || this.querySelector('a')?.getAttribute('href');
+                    if (href && href.startsWith('#')) {
+                        e.preventDefault();
+                        const targetId = href.substring(1);
+                        const target = document.getElementById(targetId);
+                        if (target) {
+                            scrollbar.scrollIntoView(target, {
+                                damping: 0.05,
+                                offsetTop: 50,
+                            });
+                        }
+                    }
+                });
+            });
+        }
+
+        // --- TARGET CURSOR IMPLEMENTATION (Vanilla JS) ---
+        function initTargetCursor() {
+            // Mobile Detection
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+            if (isMobile) return;
+
+            // Inject DOM Elements
+            const cursorWrapper = document.createElement('div');
+            cursorWrapper.className = 'target-cursor-wrapper';
+            cursorWrapper.innerHTML = `
+                <div class="target-cursor-dot"></div>
+                <div class="target-cursor-corner corner-tl"></div>
+                <div class="target-cursor-corner corner-tr"></div>
+                <div class="target-cursor-corner corner-br"></div>
+                <div class="target-cursor-corner corner-bl"></div>
+            `;
+            document.body.appendChild(cursorWrapper);
+            cursorWrapper.style.display = 'block';
+            document.body.classList.add('custom-cursor-active');
+
+            // Refs/Variables
+            const cursor = cursorWrapper;
+            const dot = cursorWrapper.querySelector('.target-cursor-dot');
+            const corners = Array.from(cursorWrapper.querySelectorAll('.target-cursor-corner'));
+            
+            // Constants
+            const borderWidth = 2;
+            const cornerSize = 12;
+            const spinDuration = 3; // seconds per rotation
+            const hoverDuration = 0.2;
+
+            // State
+            let activeTarget = null;
+            let activeStrength = 0; // 0 to 1 (0 = normal, 1 = locked on target)
+            let targetCornerPositions = null;
+
+            // Initial Position (Center screen)
+            gsap.set(cursor, {
+                xPercent: -50,
+                yPercent: -50,
+                x: window.innerWidth / 2,
+                y: window.innerHeight / 2
+            });
+
+            // 1. Move Cursor Logic
+            const moveCursor = (e) => {
+                gsap.to(cursor, {
+                    x: e.clientX,
+                    y: e.clientY,
+                    duration: 0.8, // Increased from 0.3 for smoother, slower movement
+                    ease: 'power3.out'
+                });
+            };
+            window.addEventListener('mousemove', moveCursor);
+
+            // 2. Spin Animation
+            const spinTl = gsap.timeline({ repeat: -1 })
+                .to(cursor, { rotation: 360, duration: spinDuration, ease: 'none' });
+
+            // 3. Animation Loop (Ticker) for Morphing
+            gsap.ticker.add(() => {
+                if (!cursor) return;
+
+                // Current Cursor Position (Used as origin for corners)
+                const cursorX = gsap.getProperty(cursor, 'x');
+                const cursorY = gsap.getProperty(cursor, 'y');
+
+                // Normal State Positions (Rotating around center)
+                // We don't explicitly set normal positions here because the CSS transform handles the offset relative to center,
+                // and the spinTl handles the rotation of the parent wrapper.
+                
+                if (activeStrength > 0 && targetCornerPositions) {
+                    // Locked State Calculation
+                    corners.forEach((corner, i) => {
+                        const currentX = gsap.getProperty(corner, 'x');
+                        const currentY = gsap.getProperty(corner, 'y');
+
+                        // Calculate where the corner needs to be in World Space relative to the cursor center
+                        const targetX = targetCornerPositions[i].x - cursorX;
+                        const targetY = targetCornerPositions[i].y - cursorY;
+
+                        // Interpolate based on activeStrength
+                        // However, since we are rotating the parent, setting X/Y directly on children will rotate with it.
+                        // To fix "locking" visual, we pause rotation when locked.
+                        
+                        gsap.to(corner, {
+                            x: targetX,
+                            y: targetY,
+                            duration: 0.2,
+                            ease: 'power2.out',
+                            overwrite: 'auto'
+                        });
+                    });
+                } else {
+                    // Return to rest positions
+                    const restPositions = [
+                        { x: -cornerSize * 1.5, y: -cornerSize * 1.5 }, // TL
+                        { x: cornerSize * 0.5, y: -cornerSize * 1.5 },  // TR
+                        { x: cornerSize * 0.5, y: cornerSize * 0.5 },   // BR
+                        { x: -cornerSize * 1.5, y: cornerSize * 0.5 }   // BL
+                    ];
+                    
+                    corners.forEach((corner, i) => {
+                        gsap.to(corner, {
+                            x: restPositions[i].x,
+                            y: restPositions[i].y,
+                            duration: 0.3,
+                            ease: 'power3.out',
+                            overwrite: 'auto'
+                        });
+                    });
+                }
+            });
+
+            // 4. Target Interaction Logic
+            // Selectors for interactive elements
+            const targetSelector = 'a, button, input, textarea, .dock-item, .chroma-card, .cube-face.back';
+
+            const handleMouseOver = (e) => {
+                const target = e.target.closest(targetSelector);
+                if (target && target !== activeTarget) {
+                    activeTarget = target;
+                    
+                    // Pause Rotation and reset to 0 so the box aligns with the element
+                    spinTl.pause();
+                    gsap.to(cursor, { rotation: 0, duration: 0.2 });
+
+                    // Calculate Target Box
+                    const rect = target.getBoundingClientRect();
+                    
+                    // Define corner positions in screen space
+                    targetCornerPositions = [
+                        { x: rect.left - borderWidth, y: rect.top - borderWidth }, // TL
+                        { x: rect.right + borderWidth - cornerSize, y: rect.top - borderWidth }, // TR
+                        { x: rect.right + borderWidth - cornerSize, y: rect.bottom + borderWidth - cornerSize }, // BR
+                        { x: rect.left - borderWidth, y: rect.bottom + borderWidth - cornerSize } // BL
+                    ];
+
+                    activeStrength = 1;
+                }
+            };
+
+            const handleMouseOut = (e) => {
+                const target = e.target.closest(targetSelector);
+                if (target && target === activeTarget) {
+                    activeTarget = null;
+                    activeStrength = 0;
+                    targetCornerPositions = null;
+                    
+                    // Resume Rotation
+                    spinTl.resume();
+                }
+            };
+
+            window.addEventListener('mouseover', handleMouseOver);
+            window.addEventListener('mouseout', handleMouseOut);
+
+            // 5. Click Animation
+            window.addEventListener('mousedown', () => {
+                gsap.to(dot, { scale: 0.5, duration: 0.2 });
+                gsap.to(cursor, { scale: 0.9, duration: 0.2 });
+            });
+
+            window.addEventListener('mouseup', () => {
+                gsap.to(dot, { scale: 1, duration: 0.2 });
+                gsap.to(cursor, { scale: 1, duration: 0.2 });
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             initLoadingScreen(); // Start Loading Sequence
             initCubeInteraction();
             renderProjects();
             initChromaGrid(); // New Chroma Grid for Certs
             initFloatingLines(); // Previous Background
-            initLightRays(); // NEW: Light Rays Background
             initDock(); 
+            initSmoothScroll(); // Smooth Scrollbar
+            initTargetCursor(); // NEW: Target Cursor
         });
 
     </script>
 </body>
-
 </html>
