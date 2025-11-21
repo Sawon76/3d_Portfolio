@@ -201,9 +201,12 @@
             border: 1px solid rgba(255,255,255,0.1);
         }
 
-        .dock-item:hover .dock-label {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
+        /* Only show dock labels on hover capable devices (desktop) */
+        @media (hover: hover) {
+            .dock-item:hover .dock-label {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
         }
 
         /* --- LOADING SCREEN STYLES --- */
@@ -720,6 +723,53 @@
         
         .toast.show {
             transform: translateX(0);
+        }
+
+        /* --- MOBILE OPTIMIZATIONS --- */
+        @media (max-width: 768px) {
+            /* Loader Name Split */
+            #loader-name {
+                font-size: 3rem !important; /* Decrease size */
+                display: flex !important;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 0.5rem;
+            }
+            
+            /* Break line on space */
+            .char-space {
+                display: block;
+                width: 100%;
+                height: 0;
+                margin: 0 !important;
+            }
+
+            /* Adjust Cube Size */
+            .cube-wrapper {
+                transform: scale(0.65);
+            }
+
+            /* Adjust Hero Text */
+            h1 {
+                font-size: 3rem !important;
+            }
+
+            /* Dock Adjustments */
+            .dock-container {
+                width: 95%;
+                bottom: 1.5rem;
+            }
+            
+            .dock-panel {
+                padding: 0.75rem;
+                gap: 0.75rem;
+            }
+            
+            /* Disable magnification scale on mobile via CSS override just in case */
+            .dock-item {
+                width: 45px !important;
+                height: 45px !important;
+            }
         }
     </style>
 </head>
@@ -1342,6 +1392,9 @@
 
             if (!dockPanel) return;
 
+            // Check if device supports hover (Desktop)
+            const isDesktop = window.matchMedia('(hover: hover)').matches;
+
             // --- SOUND ENGINE SETUP ---
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             const audioCtx = new AudioContext();
@@ -1373,6 +1426,8 @@
                     osc.stop(now + 0.03);
                 }
             };
+
+            if (!isDesktop) return; // Disable physics on mobile to prevent weirdness
 
             const baseSize = 50; // px
             const maxScale = 1.5; // Magnification factor
@@ -1436,6 +1491,7 @@
             const ease = 0.05; // Lower = smoother/slower catchup (0.01 to 0.1 range)
             const sensitivity = 0.05; // Lower = slower rotation speed (0.01 to 0.1 range)
 
+            // Mouse Events
             document.addEventListener('mousemove', (event) => {
                 const mouseX = (event.clientX - windowHalfX);
                 const mouseY = (event.clientY - windowHalfY);
@@ -1448,6 +1504,18 @@
                 targetRotX = Math.max(-45, Math.min(45, rotX));
                 targetRotY = Math.max(-45, Math.min(45, rotY));
             });
+
+            // Touch Events (Mobile)
+            document.addEventListener('touchmove', (event) => {
+                const touchX = (event.touches[0].clientX - windowHalfX);
+                const touchY = (event.touches[0].clientY - windowHalfY);
+                
+                let rotX = -(touchY * sensitivity * 1.5); // Slightly higher sensitivity for touch
+                let rotY = (touchX * sensitivity * 1.5);
+
+                targetRotX = Math.max(-45, Math.min(45, rotX));
+                targetRotY = Math.max(-45, Math.min(45, rotY));
+            }, { passive: true });
             
             window.addEventListener('resize', () => {
                 windowHalfX = window.innerWidth / 2;
@@ -1912,7 +1980,8 @@
                 // Handle spaces
                 if (char === ' ') {
                     span.innerHTML = '&nbsp;';
-                    span.style.display = 'inline-block';
+                    // Add special class for mobile line break
+                    span.classList.add('char-space');
                 } else {
                     span.innerText = char;
                     span.classList.add('blur-char');
