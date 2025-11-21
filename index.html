@@ -80,9 +80,6 @@
             background: #020617; /* Solid dark base */
             color: rgba(255, 255, 255, 0.9);
             min-height: 100vh;
-            /* overflow-x: hidden;  <-- Removed, handled by smooth-scrollbar container */
-            /* padding-bottom: 100px; <-- Removed, padding applied inside scroll container */
-            
             /* Crucial for smooth scrollbar */
             height: 100vh;
             overflow: hidden; 
@@ -820,8 +817,9 @@
                 </p>
                 
                 <!-- 3. Name (Main Title) -->
-                <h1 class="text-5xl md:text-7xl lg:text-8xl text-white font-serif font-bold tracking-tight leading-none drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]">
-                    SAWON MUKHERJEE
+                <h1 class="flex flex-col md:block items-center text-white font-serif font-bold tracking-tight leading-none drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]">
+                    <span class="text-5xl md:text-7xl lg:text-8xl">SAWON</span>
+                    <span class="text-3xl md:text-7xl lg:text-8xl mt-2 md:mt-0">MUKHERJEE</span>
                 </h1>
 
                 <!-- 4. Short Description -->
@@ -1414,7 +1412,7 @@
             });
         }
 
-        // Cube Interaction (Updated for Smoothness)
+        // Cube Interaction (Updated for Smoothness & Touch)
         const initCubeInteraction = () => {
             const cube = document.querySelector('.cube'); 
             if (!cube) return;
@@ -1436,18 +1434,31 @@
             const ease = 0.05; // Lower = smoother/slower catchup (0.01 to 0.1 range)
             const sensitivity = 0.05; // Lower = slower rotation speed (0.01 to 0.1 range)
 
-            document.addEventListener('mousemove', (event) => {
-                const mouseX = (event.clientX - windowHalfX);
-                const mouseY = (event.clientY - windowHalfY);
+            // Shared update function for both Mouse and Touch
+            const updateTarget = (clientX, clientY) => {
+                const mouseX = (clientX - windowHalfX);
+                const mouseY = (clientY - windowHalfY);
                 
-                // Calculate target rotation based on mouse pos
+                // Calculate target rotation based on pos
                 let rotX = -(mouseY * sensitivity); 
                 let rotY = (mouseX * sensitivity);
 
                 // Clamp values (-45 to +45 degrees)
                 targetRotX = Math.max(-45, Math.min(45, rotX));
                 targetRotY = Math.max(-45, Math.min(45, rotY));
+            };
+
+            // Mouse Event
+            document.addEventListener('mousemove', (event) => {
+                updateTarget(event.clientX, event.clientY);
             });
+
+            // Touch Event
+            document.addEventListener('touchmove', (event) => {
+                if (event.touches.length > 0) {
+                    updateTarget(event.touches[0].clientX, event.touches[0].clientY);
+                }
+            }, { passive: true }); // Passive allows scrolling to continue smoothly
             
             window.addEventListener('resize', () => {
                 windowHalfX = window.innerWidth / 2;
