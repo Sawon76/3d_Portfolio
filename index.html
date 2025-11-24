@@ -1770,10 +1770,10 @@
             
             // Configuration
             const particleSize = 1.5; // Size of dots
-            const mouseRadius = 80; // Radius of interaction
+            const mouseRadius = 100; // Increased interaction radius
             const mouseForce = 20; // How hard they push away
-            const returnSpeed = 0.08; // How fast they return (0-1)
-            const friction = 0.9; // Movement dampening
+            const returnSpeed = 0.015; // Decreased speed for smoother return (was 0.08)
+            const friction = 0.95; // Increased friction for smoother damping (was 0.9)
             
             let mouse = { x: null, y: null };
             
