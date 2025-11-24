@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,7 +11,7 @@
     <!-- Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
-    <!-- Three.js (Required for Floating Lines) -->
+    <!-- Three.js (Required for Silk Background) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
     <!-- GSAP (Required for Chroma Grid) -->
@@ -28,6 +28,7 @@
 
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
@@ -77,7 +78,7 @@
     <style>
         /* Liquid Background - Darker/Rich Blue for that premium feel */
         body {
-            background: #020617; /* Solid dark base */
+            background: #000000; /* Pure Black */
             color: rgba(255, 255, 255, 0.9);
             min-height: 100vh;
             /* Crucial for smooth scrollbar */
@@ -88,6 +89,7 @@
         /* Smooth Scrollbar Customization */
         .scrollbar-track {
             background: transparent !important;
+            z-index: 9999 !important;
         }
         .scrollbar-thumb {
             background: rgba(56, 189, 248, 0.3) !important; /* Industrial Cyan */
@@ -97,8 +99,8 @@
             background: rgba(56, 189, 248, 0.6) !important;
         }
 
-        /* --- FLOATING LINES BACKGROUND (Layer 1) --- */
-        .floating-lines-container {
+        /* --- SHADER BACKGROUND (Layer 1) --- */
+        #shader-background {
             position: fixed;
             top: 0;
             left: 0;
@@ -107,12 +109,33 @@
             z-index: -2; 
             overflow: hidden;
             pointer-events: auto; 
+            opacity: 0.3; /* Subtle texture on black */
+            mix-blend-mode: screen; /* Ensures it lights up the dark background lightly */
         }
 
-        /* --- DOCK STYLES --- */
+        /* --- 3D CARD STYLES --- */
+        .card-container-3d {
+            perspective: 1000px;
+        }
+        
+        .card-body-3d {
+            transform-style: preserve-3d;
+            transition: transform 0.1s linear; /* Fast follow */
+        }
+
+        /* When mouse leaves, smooth return */
+        .card-container-3d:not(:hover) .card-body-3d {
+            transition: transform 0.5s ease;
+        }
+
+        .card-item-3d {
+            transition: transform 0.2s linear;
+        }
+
+        /* --- DOCK STYLES (UPDATED FOR LIQUID GLASS) --- */
         .dock-container {
             position: fixed;
-            bottom: 1rem;
+            bottom: 2rem;
             left: 50%;
             transform: translateX(-50%);
             z-index: 9999;
@@ -125,33 +148,30 @@
         }
 
         .dock-panel {
-            position: relative; /* Required for the border pseudo-element */
+            position: relative; 
             display: flex;
             align-items: flex-end;
             gap: 1rem;
-            padding: 0.5rem;
-            background-color: rgba(255, 255, 255, 0.03); /* Match project card bg */
-            backdrop-filter: blur(8px);
-            border-radius: 1rem;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-        }
-
-        /* Gradient Border Style (Same as Project Cards) */
-        .dock-panel::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            border-radius: 1rem; 
-            padding: 1px; /* Border width */
-            /* Cyan gradient matching the main theme */
-            background: linear-gradient(145deg, #38bdf8, rgba(255,255,255,0.1), rgba(0,0,0,0)); 
-            -webkit-mask: 
-                linear-gradient(#fff 0 0) content-box, 
-                linear-gradient(#fff 0 0);
-            -webkit-mask-composite: xor;
-            mask-composite: exclude;
-            pointer-events: none;
-            opacity: 0.8;
+            padding: 0.75rem;
+            
+            /* --- LIQUID GLASS STYLES --- */
+            border-radius: 24px; /* Must match radius in JS */
+            
+            /* Remove standard blur/bg in favor of the SVG filter */
+            background: rgba(255, 255, 255, 0.01);
+            backdrop-filter: url(#liquidGlass);
+            -webkit-backdrop-filter: url(#liquidGlass); /* For Safari support check */
+            
+            /* Complex shadow for glass depth */
+            box-shadow:
+                0 0 2px 1px rgba(255, 255, 255, 0.05) inset,
+                0 0 10px 4px rgba(255, 255, 255, 0.02) inset,
+                0px 4px 16px rgba(17, 17, 26, 0.1),
+                0px 8px 24px rgba(17, 17, 26, 0.1),
+                0px 16px 56px rgba(17, 17, 26, 0.1);
+                
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: width 0.1s, height 0.1s; /* Smooth sizing if container changes */
         }
 
         .dock-item {
@@ -161,18 +181,24 @@
             justify-content: center;
             width: 50px; /* Base size */
             height: 50px; /* Base size */
-            border-radius: 12px;
+            border-radius: 14px;
             background-color: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
             cursor: pointer;
-            /* Increased duration to 0.3s for smoother, slower motion */
-            transition: width 0.3s cubic-bezier(0.25, 1, 0.5, 1), height 0.3s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.2s;
+            /* Physics bounce transition */
+            transition: width 0.2s cubic-bezier(0.25, 1.4, 0.5, 1), 
+                        height 0.2s cubic-bezier(0.25, 1.4, 0.5, 1), 
+                        background-color 0.2s,
+                        transform 0.2s;
             color: #ccc;
         }
         
         .dock-item:hover {
-            background-color: rgba(255, 255, 255, 0.15);
+            background-color: rgba(255, 255, 255, 0.2);
             color: #fff;
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(56, 189, 248, 0.3);
+            border-color: rgba(56, 189, 248, 0.5);
         }
 
         .dock-icon {
@@ -183,19 +209,22 @@
 
         .dock-label {
             position: absolute;
-            top: -40px;
+            top: -50px;
             left: 50%;
             transform: translateX(-50%) translateY(10px);
-            background-color: rgba(0, 0, 0, 0.9);
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(4px);
             color: white;
-            padding: 4px 8px;
-            border-radius: 6px;
+            padding: 6px 12px;
+            border-radius: 8px;
             font-size: 12px;
+            font-weight: 500;
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.2s, transform 0.2s;
             white-space: nowrap;
             border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
 
         .dock-item:hover .dock-label {
@@ -210,12 +239,23 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: #000000; /* Pure Black */
-            z-index: 9999;
+            background-color: #000000; /* Match body bg */
+            z-index: 10000;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: transform 1s cubic-bezier(0.76, 0, 0.24, 1);
+            overflow: hidden; /* Needed for canvas */
+        }
+
+        /* Vortex Canvas in Loader */
+        #vortex-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1; /* Behind loader content */
         }
 
         /* Class to slide the curtain up */
@@ -231,13 +271,15 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            position: relative;
+            z-index: 10;
         }
 
         /* Loading Bar Styles */
         .loader-bar-container {
             width: 200px;
             height: 2px;
-            background-color: #333; 
+            background-color: #1e293b; 
             border-radius: 4px;
             overflow: hidden;
             margin-bottom: 2rem; /* Increased spacing */
@@ -247,7 +289,8 @@
         #loader-bar {
             width: 0%;
             height: 100%;
-            background-color: #ffffff; 
+            background-color: #38bdf8; 
+            box-shadow: 0 0 10px #38bdf8;
             transition: width 0.05s linear;
         }
 
@@ -259,6 +302,12 @@
             letter-spacing: 0.2em;
             display: none; /* Hidden initially */
             perspective: 1000px; /* Adds depth */
+        }
+
+        @media (max-width: 768px) {
+            #loader-name {
+                font-size: 2rem;
+            }
         }
 
         /* Each character's style */
@@ -276,42 +325,6 @@
             opacity: 1;
             filter: blur(0px);
             transform: translate3d(0, 0, 0);
-        }
-
-        /* --- NEW: TOP GLOW (Event Horizon Style) --- */
-        #top-glow {
-            position: fixed;
-            top: -100px; /* Pull up to hide top edge */
-            left: 50%;
-            transform: translateX(-50%);
-            width: 120vw; /* Wide coverage */
-            height: 200px;
-            /* Intense White -> Purple -> Transparent Gradient */
-            background: radial-gradient(50% 50% at 50% 50%, 
-                rgba(255, 255, 255, 0.9) 0%, 
-                rgba(168, 85, 247, 0.6) 20%, 
-                rgba(88, 28, 135, 0.4) 50%, 
-                transparent 80%);
-            filter: blur(60px);
-            z-index: 1; 
-            pointer-events: none;
-            opacity: 0.4; /* Reduced from 0.8 */
-        }
-
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent; 
-        }
-        ::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.2); 
-            border-radius: 10px;
-            backdrop-filter: blur(5px);
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.4); 
         }
 
         /* Glass Panel Utility */
@@ -352,205 +365,12 @@
             opacity: 0.1; /* Reduced from 0.3 */
         }
 
-        /* --- 3D CUBE STYLES (REMOVED) --- */
-        /* .cube-wrapper, .cube, .cube-face styles removed */
-
-        .blueprint-grid {
-            background-image: 
-                linear-gradient(rgba(56, 189, 248, 0.2) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(56, 189, 248, 0.2) 1px, transparent 1px);
-            background-size: 20px 20px;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-
         /* Model Viewer Styles */
         model-viewer {
             width: 100%;
             height: 100%;
             background-color: transparent;
             --poster-color: transparent;
-        }
-
-        /* --- CHROMA GRID STYLES --- */
-        .chroma-grid {
-            display: grid;
-            grid-template-columns: repeat(1, 1fr);
-            gap: 2rem;
-            position: relative;
-            width: 100%;
-        }
-        @media (min-width: 768px) {
-            .chroma-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-        @media (min-width: 1024px) {
-            .chroma-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-        }
-
-        .chroma-card {
-            position: relative;
-            background: rgba(255, 255, 255, 0.05); /* Decreased transparency */
-            border-radius: 1.5rem;
-            padding: 1px; /* Space for gradient border */
-            overflow: hidden;
-            cursor: pointer;
-            transition: transform 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            backdrop-filter: blur(32px); /* Increased from 24px */
-            -webkit-backdrop-filter: blur(32px); /* Increased from 24px */
-        }
-        
-        .chroma-card:hover {
-            transform: translateY(-4px);
-        }
-
-        .chroma-card::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            border-radius: 1.5rem;
-            padding: 1px; 
-            background: var(--card-gradient, linear-gradient(145deg, rgba(255,255,255,0.1), rgba(0,0,0,0)));
-            -webkit-mask: 
-                linear-gradient(#fff 0 0) content-box, 
-                linear-gradient(#fff 0 0);
-            -webkit-mask-composite: xor;
-            mask-composite: exclude;
-            pointer-events: none;
-            opacity: 0.5;
-        }
-
-        /* The moving spotlight gradient on the card */
-        .chroma-card::after {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(
-                300px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), 
-                rgba(255, 255, 255, 0.15),
-                transparent 40%
-            );
-            opacity: 0;
-            transition: opacity 0.3s;
-            pointer-events: none;
-            z-index: 2;
-            mix-blend-mode: overlay;
-        }
-
-        .chroma-card:hover::after {
-            opacity: 1;
-        }
-
-        /* Inner content wrapper */
-        .chroma-content {
-            background: rgba(15, 23, 42, 0.7); /* Decreased transparency */
-            /* Added Grid Line Pattern */
-            background-image: 
-                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 20px 20px;
-
-            backdrop-filter: blur(32px); 
-            border-radius: 1.5rem;
-            height: 100%;
-            width: 100%;
-            padding: 1.5rem;
-            display: flex;
-            flex-direction: row; /* Horizontal layout like before */
-            align-items: center;
-            position: relative;
-            z-index: 1;
-        }
-
-        /* Spotlight effect from the GRID container (Global flashlight) */
-        .chroma-overlay {
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-            background: radial-gradient(
-                var(--r, 300px) circle at var(--x, 50%) var(--y, 50%), 
-                rgba(56, 189, 248, 0.08), 
-                transparent 40%
-            );
-            mix-blend-mode: screen;
-            z-index: 0;
-            opacity: 0; /* Hidden by default, controlled by JS */
-            transition: opacity 0.6s ease;
-        }
-
-        .chroma-icon-box {
-            flex-shrink: 0;
-            width: 3.5rem;
-            height: 3.5rem;
-            border-radius: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 1rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        }
-
-        .chroma-info {
-            flex-grow: 1;
-        }
-        
-        .chroma-info h3 {
-            font-weight: 700;
-            color: white;
-            font-size: 1.125rem;
-            line-height: 1.5rem;
-        }
-        
-        .chroma-info .role {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 0.875rem;
-            margin-top: 0.125rem;
-        }
-
-        .chroma-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 0.5rem;
-            padding-top: 0.5rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        
-        .chroma-meta span {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem;
-            color: rgba(255, 255, 255, 0.4);
-        }
-
-        .chroma-btn {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.25rem 0.75rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 0.5rem;
-            font-size: 0.75rem;
-            color: #38bdf8;
-            transition: all 0.2s;
-        }
-        
-        .chroma-btn:hover {
-            background: #38bdf8;
-            color: white;
         }
 
         /* --- NEW: TECH PANEL STYLE (Contact Form) --- */
@@ -563,8 +383,6 @@
             box-shadow: 0 0 20px rgba(56, 189, 248, 0.1);
         }
 
-        /* --- TARGET CURSOR STYLES REMOVED --- */
-        
         /* Toast Notifications */
         .toast-container {
             position: fixed;
@@ -596,12 +414,101 @@
         .toast.show {
             transform: translateX(0);
         }
+
+        /* --- LIQUID GLASS FILTER (Hidden) --- */
+        .svg-filter {
+            position: absolute;
+            width: 0;
+            height: 0;
+            pointer-events: none;
+            opacity: 0;
+        }
     </style>
 </head>
 <body class="font-sans relative min-h-screen">
 
+    <!-- LIQUID GLASS SVG DEFINITION -->
+    <svg class="svg-filter">
+      <defs>
+        <filter
+          id="liquidGlass"
+          color-interpolation-filters="sRGB"
+        >
+          <feImage
+            id="liquid-displacement-image"
+            x="0"
+            y="0"
+            width="100%"
+            height="100%"
+            result="map"
+          />
+          <feDisplacementMap
+            id="redchannel"
+            in="SourceGraphic"
+            in2="map"
+            xChannelSelector="R"
+            yChannelSelector="B"
+            scale="0" 
+            result="dispRed"
+          />
+          <feColorMatrix
+            in="dispRed"
+            type="matrix"
+            values="1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0"
+            result="red"
+          />
+          <feDisplacementMap
+            id="greenchannel"
+            in="SourceGraphic"
+            in2="map"
+            xChannelSelector="R"
+            yChannelSelector="B"
+            scale="10" 
+            result="dispGreen"
+          />
+          <feColorMatrix
+            in="dispGreen"
+            type="matrix"
+            values="0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0"
+            result="green"
+          />
+          <feDisplacementMap
+            id="bluechannel"
+            in="SourceGraphic"
+            in2="map"
+            xChannelSelector="R"
+            yChannelSelector="B"
+            scale="20" 
+            result="dispBlue"
+          />
+          <feColorMatrix
+            in="dispBlue"
+            type="matrix"
+            values="0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 0"
+            result="blue"
+          />
+          <feBlend
+            in="red"
+            in2="green"
+            mode="screen"
+            result="rg"
+          />
+          <feBlend
+            in="rg"
+            in2="blue"
+            mode="screen"
+            result="output"
+          />
+          <feGaussianBlur stdDeviation="11" />
+        </filter>
+      </defs>
+    </svg>
+
     <!-- LOADING SCREEN -->
     <div id="loading-screen">
+        <!-- Vortex Canvas Background -->
+        <canvas id="vortex-canvas"></canvas>
+        
         <div class="loader-content">
             <!-- Progress Bar Container -->
             <div class="loader-bar-container">
@@ -613,15 +520,9 @@
         </div>
     </div>
 
-    <!-- Top Glow Element -->
-    <div id="top-glow"></div>
+    <!-- NEW: SHADER BACKGROUND (Layer 1) -->
+    <div id="shader-background"></div>
 
-    <!-- NEW: Floating Lines Background (Layer 1) -->
-    <div id="floating-lines-container" class="floating-lines-container"></div>
-
-    <!-- Ambient Background Orbs -->
-    <div class="orb bg-blue-900 w-[800px] h-[800px] top-[-200px] left-[20%] animate-pulse"></div>
-    
     <!-- DOCK NAVIGATION -->
     <div class="dock-container">
         <div class="dock-panel">
@@ -630,7 +531,7 @@
                 <span class="dock-label">Home</span>
             </a>
             
-            <button onclick="document.getElementById('resume-modal').classList.remove('hidden')" class="dock-item">
+            <button onclick="openResumeModal()" class="dock-item">
                 <i data-lucide="file-text" class="dock-icon"></i>
                 <span class="dock-label">CV / Resume</span>
             </button>
@@ -660,10 +561,9 @@
         <!-- Hero Section -->
         <section id="home" class="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-20">
             
-            <!-- 1. Hero Image (REPLACED CUBE) -->
+            <!-- 1. Hero Image (Placeholder for now) -->
             <div class="relative z-20 mb-8 animate-float">
-                <div class="relative w-64 h-64 md:w-80 md:h-80 rounded-3xl overflow-hidden border border-white/20 shadow-[0_0_50px_rgba(56,189,248,0.2)] group">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent z-10"></div>
+                <div class="relative w-40 h-40 md:w-48 md:h-48 rounded-full overflow-hidden border-2 border-industrial-accent/50 shadow-[0_0_30px_rgba(56,189,248,0.6)] group bg-black">
                     <img src="me.jpg" 
                          alt="Profile Photo" 
                          class="w-full h-full object-cover hover:scale-110 transition-transform duration-700 ease-in-out">
@@ -671,16 +571,18 @@
             </div>
 
             <!-- 2. Top Label -->
-            <div class="text-center z-20 mt-8 space-y-2">
-                <p class="text-industrial-accent text-xs md:text-sm font-mono uppercase tracking-[0.3em] animate-pulse">
-                    Studying Industrial Engineering and Management.
+            <div class="text-center z-20 mt-8 space-y-2 px-4 relative w-full flex flex-col items-center">
+                <p class="text-industrial-accent text-xs md:text-sm font-mono uppercase tracking-[0.3em] animate-pulse mb-4">
+                    Studying Industrial Engineering and Management
                 </p>
                 
-                <!-- 3. Name (Main Title) -->
-                <h1 class="flex flex-col md:block items-center text-white font-serif font-bold tracking-tight leading-none drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]">
-                    <span class="text-5xl md:text-7xl lg:text-8xl">SAWON</span>
-                    <span class="text-3xl md:text-7xl lg:text-8xl mt-2 md:mt-0">MUKHERJEE</span>
-                </h1>
+                <!-- 3. Name (Main Title) - REPLACED WITH PARTICLE CANVAS -->
+                <div id="particle-text-container" class="relative w-full h-[120px] md:h-[160px] flex items-center justify-center overflow-visible z-20">
+                    <canvas id="text-particle-canvas"></canvas>
+                </div>
+                
+                <!-- Hidden h1 for SEO/Accessibility -->
+                <h1 class="sr-only">SAWON MUKHERJEE</h1>
 
                 <!-- 4. Short Description -->
                 <p class="text-glass-textMuted text-xs md:text-sm font-mono uppercase tracking-[0.2em] mt-4 max-w-2xl mx-auto">
@@ -690,7 +592,7 @@
 
             <!-- Action Buttons -->
             <div class="flex items-center justify-center w-full mt-12 z-20">
-                <button onclick="document.getElementById('resume-modal').classList.remove('hidden')" class="group relative px-8 py-3 overflow-hidden rounded-full bg-transparent border border-white/30 text-white transition-all hover:border-industrial-accent hover:text-industrial-accent cursor-pointer">
+                <button onclick="openResumeModal()" class="group relative px-8 py-3 overflow-hidden rounded-full bg-transparent border border-white/30 text-white transition-all hover:border-industrial-accent hover:text-industrial-accent cursor-pointer">
                     <span class="absolute top-0 left-0 w-full h-full bg-white/5 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-500"></span>
                     <span class="relative text-sm font-medium tracking-widest uppercase flex items-center">
                         CV / Resume <i data-lucide="file-text" class="ml-2 w-4 h-4"></i>
@@ -699,7 +601,7 @@
             </div>
 
             <!-- Scroll Indicator -->
-            <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce opacity-50">
+            <div class="absolute bottom-32 left-1/2 transform -translate-x-1/2 animate-bounce opacity-50 z-10">
                 <span class="block w-[1px] h-12 bg-gradient-to-b from-transparent via-white to-transparent"></span>
             </div>
         </section>
@@ -742,14 +644,14 @@
                 </div>
 
                 <!-- CHROMA GRID for Certificates -->
-                <div id="chroma-container" class="chroma-grid">
+                <div id="chroma-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     <!-- Cards are rendered via JS in initChromaGrid() -->
                 </div>
             </div>
         </section>
 
         <!-- Contact Section -->
-        <section id="contact" class="py-24 relative border-t border-white/5" style="padding-bottom: 150px;">
+        <section id="contact" class="py-24 relative border-t border-white/5" style="padding-bottom: 200px;">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-16">
                     <div>
@@ -796,7 +698,6 @@
                     </div>
 
                     <!-- Contact Form with Tech Grid Style -->
-                    <!-- Replaced custom form with Fillout Form Iframe -->
                     <div class="glass-panel rounded-3xl relative tech-panel overflow-hidden h-[650px] w-full">
                         <iframe 
                             src="https://forms.fillout.com/t/3MJjjEQYdcus" 
@@ -817,7 +718,7 @@
     <!-- Resume Modal -->
     <div id="resume-modal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" aria-hidden="true" onclick="document.getElementById('resume-modal').classList.add('hidden')"></div>
+            <div class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" aria-hidden="true" onclick="closeResumeModal()"></div>
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
             <div class="glass-panel inline-block align-bottom rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-white/10">
                 <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
@@ -832,11 +733,11 @@
                                     Choose the format you would like to download.
                                 </p>
                                 <div class="mt-4 space-y-3">
-                                    <a href="https://drive.google.com/file/d/1uXfkZdNjgboP_TI6CVHeNDKTdRF2imZg/view?usp=sharing" class="flex items-center justify-between w-full px-4 py-3 glass-input rounded-xl hover:bg-white/10 transition-colors text-gray-200">
+                                    <a href="https://drive.google.com/file/d/1uXfkZdNjgboP_TI6CVHeNDKTdRF2imZg/view?usp=sharing" target="_blank" class="flex items-center justify-between w-full px-4 py-3 glass-input rounded-xl hover:bg-white/10 transition-colors text-gray-200">
                                         <span>Full CV (Academic)</span>
                                         <i data-lucide="download" class="w-4 h-4 text-industrial-accent"></i>
                                     </a>
-                                    <a href="https://drive.google.com/file/d/1uXfkZdNjgboP_TI6CVHeNDKTdRF2imZg/view?usp=sharing" class="flex items-center justify-between w-full px-4 py-3 glass-input rounded-xl hover:bg-white/10 transition-colors text-gray-200">
+                                    <a href="https://drive.google.com/file/d/1uXfkZdNjgboP_TI6CVHeNDKTdRF2imZg/view?usp=sharing" target="_blank" class="flex items-center justify-between w-full px-4 py-3 glass-input rounded-xl hover:bg-white/10 transition-colors text-gray-200">
                                         <span>Resume (1 Page Summary)</span>
                                         <i data-lucide="download" class="w-4 h-4 text-industrial-accent"></i>
                                     </a>
@@ -846,7 +747,7 @@
                     </div>
                 </div>
                 <div class="bg-black/20 px-4 py-3 sm:px-6 flex justify-center">
-                    <button type="button" class="inline-flex justify-center rounded-xl border border-white/20 shadow-sm px-6 py-2 bg-white/10 text-base font-medium text-white hover:bg-white/20 focus:outline-none sm:text-sm backdrop-blur-sm transition-all" onclick="document.getElementById('resume-modal').classList.add('hidden')">
+                    <button type="button" class="inline-flex justify-center rounded-xl border border-white/20 shadow-sm px-6 py-2 bg-white/10 text-base font-medium text-white hover:bg-white/20 focus:outline-none sm:text-sm backdrop-blur-sm transition-all" onclick="closeResumeModal()">
                         Close
                     </button>
                 </div>
@@ -913,7 +814,9 @@
     <!-- Scripts -->
     <script>
         // Initialize Lucide Icons
-        lucide.createIcons();
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
         
         // Toast Notification Function
         function showToast(message) {
@@ -934,10 +837,24 @@
             }, 4000);
         }
 
-        // Mobile Menu Toggle
-        function toggleMobileMenu() {
-            const menu = document.getElementById('mobile-menu');
-            menu.classList.toggle('hidden');
+        // --- DOCK VISIBILITY HELPER ---
+        function toggleDock(show) {
+            const dock = document.querySelector('.dock-container');
+            if (dock) {
+                dock.style.opacity = show ? '1' : '0';
+                dock.style.pointerEvents = show ? 'auto' : 'none';
+            }
+        }
+
+        // --- RESUME MODAL LOGIC ---
+        function openResumeModal() {
+            document.getElementById('resume-modal').classList.remove('hidden');
+            toggleDock(false);
+        }
+
+        function closeResumeModal() {
+            document.getElementById('resume-modal').classList.add('hidden');
+            toggleDock(true);
         }
 
         // 3D Viewer Logic
@@ -948,12 +865,14 @@
             titleEl.textContent = title;
             viewer.src = modelUrl;
             modal.classList.remove('hidden');
+            toggleDock(false);
         }
 
         function close3DViewer() {
             const modal = document.getElementById('model-modal');
             const viewer = document.getElementById('main-viewer');
             modal.classList.add('hidden');
+            toggleDock(true);
             setTimeout(() => { viewer.src = ""; }, 300);
         }
 
@@ -985,12 +904,14 @@
             const iframe = document.getElementById('pdf-frame');
             iframe.src = previewUrl;
             modal.classList.remove('hidden');
+            toggleDock(false);
         }
 
         function closePdfViewer() {
             const modal = document.getElementById('pdf-modal');
             const iframe = document.getElementById('pdf-frame');
             modal.classList.add('hidden');
+            toggleDock(true);
             setTimeout(() => { iframe.src = ""; }, 300); // Clear source to stop loading
         }
 
@@ -1001,7 +922,8 @@
                 description: "Designed an Iphone 14 pro max model.",
                 tags: ["3D Modeling"],
                 icon: "settings",
-                model: "https://raw.githubusercontent.com/Sawon76/3d_Portfolio/refs/heads/main/models/Iphone_14_pro_max.gltf",
+                // Corrected URL to use githack for proper mime-type serving
+                model: "https://raw.githack.com/Sawon76/3d_Portfolio/main/models/Iphone_14_pro_max.gltf",
                 borderColor: "#38bdf8", 
                 gradient: "linear-gradient(145deg, #38bdf8, #000)"
             },
@@ -1010,7 +932,7 @@
                 description: "Prototype of a mouse",
                 tags: ["3D Modeling"],
                 icon: "cylinder",
-                model: "https://raw.githubusercontent.com/Sawon76/3d_Portfolio/refs/heads/main/models/Mouse_2.gltf",
+                model: "https://raw.githack.com/Sawon76/3d_Portfolio/main/models/Mouse_2.gltf",
                 borderColor: "#6366f1",
                 gradient: "linear-gradient(145deg, #6366f1, #000)"
             },
@@ -1019,7 +941,7 @@
                 description: "Train Engine Model",
                 tags: ["3D Modeling"],
                 icon: "wrench",
-                model: "https://raw.githubusercontent.com/Sawon76/3d_Portfolio/refs/heads/main/models/Train.gltf",
+                model: "https://raw.githack.com/Sawon76/3d_Portfolio/main/models/Train.gltf",
                 borderColor: "#10b981",
                 gradient: "linear-gradient(145deg, #10b981, #000)"
             },
@@ -1028,7 +950,7 @@
                 description: "Prototype of a mouse",
                 tags: ["3D Modeling"],
                 icon: "wrench",
-                model: "https://raw.githubusercontent.com/Sawon76/3d_Portfolio/refs/heads/main/models/Mouse_3.gltf",
+                model: "https://raw.githack.com/Sawon76/3d_Portfolio/main/models/Mouse_3.gltf",
                 borderColor: "#10b981",
                 gradient: "linear-gradient(145deg, #10b981, #000)"
             },
@@ -1037,72 +959,76 @@
                 description: "Tea Pot Model",
                 tags: ["3D Modeling | Surfacing"],
                 icon: "wrench",
-                model: "https://raw.githubusercontent.com/Sawon76/3d_Portfolio/refs/heads/main/models/Surface.gltf",
+                model: "https://raw.githack.com/Sawon76/3d_Portfolio/main/models/Surface.gltf",
                 borderColor: "#10b981",
                 gradient: "linear-gradient(145deg, #10b981, #000)"
             },
         ];
 
+        // --- NEW 3D CARD RENDER LOGIC ---
         function renderProjects() {
             const container = document.getElementById('projects-grid');
             if (!container) return;
 
-            // Switch to chroma-grid class
-            container.className = 'chroma-grid';
+            // Using standard grid layout
+            container.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8';
 
+            // Applying the user's requested 3D Card Style
+            // Note: Replacing chroma-card with 3D card structure
             container.innerHTML = myProjects.map(project => `
-                <article 
-                    class="chroma-card" 
-                    style="--card-border: ${project.borderColor}; --card-gradient: ${project.gradient};"
-                >
-                    <div class="chroma-content">
-                        <div class="chroma-icon-box">
-                            <i data-lucide="${project.icon}" class="w-6 h-6 text-white"></i>
-                        </div>
-                        <div class="chroma-info">
-                            <h3>${project.title}</h3>
-                            <div class="role text-xs text-glass-textMuted mb-3 leading-relaxed line-clamp-2">${project.description}</div>
-                            <div class="chroma-meta">
-                                <div class="flex flex-wrap gap-1">
-                                    ${project.tags.map(tag => `<span class="text-[10px] bg-white/10 px-1.5 py-0.5 rounded border border-white/5">${tag}</span>`).join('')}
+                <div class="card-container-3d group/card relative h-auto w-full">
+                    <div 
+                        class="card-body-3d relative size-auto rounded-xl border border-white/20 bg-black p-6 hover:shadow-2xl hover:shadow-emerald-500/[0.1]"
+                    >
+                        <div class="card-item-3d" style="transform: translateZ(50px)">
+                            <div class="flex items-center gap-4 mb-4">
+                                <div class="p-2 bg-white/10 rounded-lg border border-white/10">
+                                    <i data-lucide="${project.icon}" class="w-6 h-6 text-white"></i>
                                 </div>
-                                <button onclick="open3DViewer('${project.model}', '${project.title}')" class="chroma-btn whitespace-nowrap ml-2">
+                                <h3 class="text-xl font-bold text-white">
+                                    ${project.title}
+                                </h3>
+                            </div>
+                        </div>
+                        
+                        <div class="card-item-3d mt-2 max-w-sm text-sm text-neutral-300" style="transform: translateZ(60px)">
+                            <p>${project.description}</p>
+                        </div>
+                        
+                        <div class="card-item-3d mt-6 w-full" style="transform: translateZ(80px)">
+                            <div class="h-48 w-full rounded-xl bg-gradient-to-br from-gray-900 to-black border border-white/10 flex items-center justify-center group-hover/card:shadow-xl overflow-hidden pointer-events-none">
+                                <!-- Using placeholder 3D preview image or icon since actual image isn't provided -->
+                                <model-viewer 
+                                    src="${project.model}" 
+                                    auto-rotate 
+                                    camera-controls
+                                    disable-zoom
+                                    style="width: 100%; height: 100%;"
+                                    exposure="0.5"
+                                ></model-viewer>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-10 flex items-center justify-between">
+                            <div class="card-item-3d flex flex-wrap gap-2" style="transform: translateZ(60px)">
+                                ${project.tags.map(tag => `<span class="text-[10px] bg-white/10 px-2 py-1 rounded-full border border-white/5 text-white">${tag}</span>`).join('')}
+                            </div>
+                            
+                            <div class="card-item-3d" style="transform: translateZ(120px)">
+                                <button 
+                                    onclick="open3DViewer('${project.model}', '${project.title}')"
+                                    class="rounded-xl bg-white px-4 py-2 text-xs font-bold text-black hover:bg-gray-200 transition-colors pointer-events-auto relative z-50"
+                                >
                                     View 3D
                                 </button>
                             </div>
                         </div>
                     </div>
-                </article>
-            `).join('') + '<div class="chroma-overlay"></div>';
+                </div>
+            `).join('');
 
-            lucide.createIcons();
-
-            // Add Event Listeners for Spotlight (Reuse logic)
-            const overlay = container.querySelector('.chroma-overlay');
-            const cards = container.querySelectorAll('.chroma-card');
-            
-            container.addEventListener('pointermove', (e) => {
-                const rect = container.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                container.style.setProperty('--x', `${x}px`);
-                container.style.setProperty('--y', `${y}px`);
-                if(overlay) overlay.style.opacity = '1';
-            });
-
-            container.addEventListener('pointerleave', () => {
-                if(overlay) overlay.style.opacity = '0';
-            });
-
-            cards.forEach(card => {
-                card.addEventListener('mousemove', (e) => {
-                    const rect = card.getBoundingClientRect();
-                    const x = e.clientX - rect.left;
-                    const y = e.clientY - rect.top;
-                    card.style.setProperty('--mouse-x', `${x}px`);
-                    card.style.setProperty('--mouse-y', `${y}px`);
-                });
-            });
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            init3DCards(); // Initialize event listeners for 3D effect
         }
 
         // --- CHROMA GRID IMPLEMENTATION (Vanilla JS) ---
@@ -1114,7 +1040,8 @@
                 handle: "ID: C-123456789",
                 borderColor: "#38bdf8", // Cyan
                 gradient: "linear-gradient(145deg, #38bdf8, #000)",
-                url: "PASTE_YOUR_GOOGLE_DRIVE_LINK_HERE" // Placeholder to trigger toast
+                // Added a dummy PDF for demonstration
+                url: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" 
             },
             {
                 icon: "shield-check",
@@ -1123,7 +1050,7 @@
                 handle: "Active",
                 borderColor: "#6366f1", // Indigo
                 gradient: "linear-gradient(180deg, #6366f1, #000)",
-                url: "PASTE_YOUR_GOOGLE_DRIVE_LINK_HERE"
+                url: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
             },
             {
                 icon: "file-badge",
@@ -1132,7 +1059,7 @@
                 handle: "Active",
                 borderColor: "#3b82f6", // Blue
                 gradient: "linear-gradient(145deg, #3b82f6, #000)",
-                url: "PASTE_YOUR_GOOGLE_DRIVE_LINK_HERE"
+                url: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
             },
             {
                 icon: "book-open",
@@ -1141,7 +1068,7 @@
                 handle: "Completed",
                 borderColor: "#10b981", // Emerald
                 gradient: "linear-gradient(145deg, #10b981, #000)",
-                url: "PASTE_YOUR_GOOGLE_DRIVE_LINK_HERE"
+                url: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
             }
         ];
 
@@ -1149,64 +1076,83 @@
             const container = document.getElementById('chroma-container');
             if(!container) return;
             
-            // 1. Render Cards
+            // Using standard grid layout to match new style
+            container.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8';
+            
+            // 1. Render Cards with 3D Style
             container.innerHTML = myCertifications.map(c => `
-                <article 
-                    class="chroma-card" 
-                    onclick="openPdfViewer('${c.url}')"
-                    style="--card-border: ${c.borderColor}; --card-gradient: ${c.gradient};"
-                >
-                    <div class="chroma-content">
-                        <div class="chroma-icon-box">
-                            <i data-lucide="${c.icon}" class="w-6 h-6 text-white"></i>
+                <div class="card-container-3d group/card relative h-auto w-full">
+                    <div 
+                        class="card-body-3d relative size-auto rounded-xl border border-white/20 bg-black p-6 hover:shadow-2xl hover:shadow-emerald-500/[0.1]"
+                    >
+                        <div class="card-item-3d" style="transform: translateZ(50px)">
+                            <div class="flex items-center gap-4 mb-4">
+                                <div class="p-2 bg-white/10 rounded-lg border border-white/10">
+                                    <i data-lucide="${c.icon}" class="w-6 h-6 text-white"></i>
+                                </div>
+                                <h3 class="text-xl font-bold text-white">
+                                    ${c.title}
+                                </h3>
+                            </div>
                         </div>
-                        <div class="chroma-info">
-                            <h3>${c.title}</h3>
-                            <div class="role">${c.subtitle}</div>
-                            <div class="chroma-meta">
-                                <span>${c.handle}</span>
-                                <button class="chroma-btn">Show</button>
+                        
+                        <div class="card-item-3d mt-2 text-sm text-neutral-300" style="transform: translateZ(60px)">
+                            <p>${c.subtitle}</p>
+                        </div>
+                        
+                        <div class="mt-10 flex items-center justify-between">
+                            <div class="card-item-3d" style="transform: translateZ(20px)">
+                                <span class="text-xs font-mono text-gray-400">${c.handle}</span>
+                            </div>
+                            
+                            <div class="card-item-3d" style="transform: translateZ(100px)">
+                                <button 
+                                    onclick="openPdfViewer('${c.url}')"
+                                    class="rounded-xl bg-white px-4 py-2 text-xs font-bold text-black hover:bg-gray-200 transition-colors pointer-events-auto relative z-50"
+                                >
+                                    Show
+                                </button>
                             </div>
                         </div>
                     </div>
-                </article>
-            `).join('') + `
-                <div class="chroma-overlay"></div>
-            `;
+                </div>
+            `).join('');
             
             // Re-init icons for new content
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            init3DCards(); // Initialize event listeners for 3D effect
+        }
 
-            // 2. Initialize GSAP Logic
-            const overlay = container.querySelector('.chroma-overlay');
-            const cards = container.querySelectorAll('.chroma-card');
+        // --- 3D CARD LOGIC (Vanilla JS Port) ---
+        function init3DCards() {
+            const containers = document.querySelectorAll('.card-container-3d');
             
-            // Track container movement
-            container.addEventListener('pointermove', (e) => {
-                const rect = container.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
+            containers.forEach(container => {
+                const body = container.querySelector('.card-body-3d');
                 
-                // Update container CSS vars for the big spotlight
-                container.style.setProperty('--x', `${x}px`);
-                container.style.setProperty('--y', `${y}px`);
+                container.addEventListener('mousemove', (e) => {
+                    const rect = container.getBoundingClientRect();
+                    const width = rect.width;
+                    const height = rect.height;
+                    const mouseX = e.clientX - rect.left;
+                    const mouseY = e.clientY - rect.top;
+                    
+                    const xPct = mouseX / width - 0.5;
+                    const yPct = mouseY / height - 0.5;
+                    
+                    const x = (yPct * 20); // Rotate X based on Y position
+                    const y = (xPct * -20); // Rotate Y based on X position
+                    
+                    body.style.transform = `rotateX(${x}deg) rotateY(${y}deg)`;
+                });
                 
-                // Fade in the overlay
-                if(overlay) overlay.style.opacity = '1';
-            });
-
-            container.addEventListener('pointerleave', () => {
-                if(overlay) overlay.style.opacity = '0';
-            });
-
-            // Track individual card movement
-            cards.forEach(card => {
-                card.addEventListener('mousemove', (e) => {
-                    const rect = card.getBoundingClientRect();
-                    const x = e.clientX - rect.left;
-                    const y = e.clientY - rect.top;
-                    card.style.setProperty('--mouse-x', `${x}px`);
-                    card.style.setProperty('--mouse-y', `${y}px`);
+                container.addEventListener('mouseenter', () => {
+                    body.style.transition = 'none';
+                });
+                
+                container.addEventListener('mouseleave', () => {
+                    body.style.transition = 'transform 0.5s ease';
+                    body.style.transform = `rotateX(0deg) rotateY(0deg)`;
                 });
             });
         }
@@ -1290,189 +1236,126 @@
             });
         }
 
-        // --- FLOATING LINES BACKGROUND (Vanilla Three.js) ---
-        function initFloatingLines() {
-            const container = document.getElementById('floating-lines-container');
-            if (!container) return;
+        // --- LIQUID GLASS EFFECT LOGIC (PORTED FROM VUE) ---
+        function initLiquidGlass() {
+            const dockPanel = document.querySelector('.dock-panel');
+            const filterImage = document.querySelector('#liquid-displacement-image'); // The feImage element
 
-            // CONFIGURATION
-            const config = {
-                linesGradient: ["#38bdf8", "#6366f1", "#ffffff"], // Cyan, Indigo, White
-                enabledWaves: ['top', 'middle', 'bottom'],
-                lineCount: [6],
-                lineDistance: [5],
-                topWavePosition: { x: 10.0, y: 0.5, rotate: -0.4 },
-                middleWavePosition: { x: 5.0, y: 0.0, rotate: 0.2 },
-                bottomWavePosition: { x: 2.0, y: -0.7, rotate: 0.4 },
-                animationSpeed: 1,
-                interactive: true,
-                bendRadius: 5.0,
-                bendStrength: -0.5,
-                mouseDamping: 0.05,
-                parallax: true,
-                parallaxStrength: 0.2
+            if (!dockPanel || !filterImage) return;
+
+            const updateFilter = () => {
+                const rect = dockPanel.getBoundingClientRect();
+                const width = rect.width;
+                const height = rect.height;
+                const radius = 24; // Must match CSS border-radius
+                const border = Math.min(width, height) * 0.035; // approx prop.border (0.07) * 0.5 from Vue code
+
+                // Construct SVG String (The "Map")
+                // This mimics the 'displacementImage' computed property from the Vue code
+                // It creates a black rect, then a red/blue gradient rect, then an inner rect with blur
+                const svg = `
+                <svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="red" x1="100%" y1="0%" x2="0%" y2="0%">
+                            <stop offset="0%" stop-color="#0000"/>
+                            <stop offset="100%" stop-color="red"/>
+                        </linearGradient>
+                        <linearGradient id="blue" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#0000"/>
+                            <stop offset="100%" stop-color="blue"/>
+                        </linearGradient>
+                    </defs>
+                    <rect x="0" y="0" width="${width}" height="${height}" fill="black"></rect>
+                    <rect x="0" y="0" width="${width}" height="${height}" rx="${radius}" fill="url(#red)" />
+                    <rect x="0" y="0" width="${width}" height="${height}" rx="${radius}" fill="url(#blue)" style="mix-blend-mode: difference" />
+                    <rect 
+                        x="${border}" 
+                        y="${border}" 
+                        width="${width - border * 2}" 
+                        height="${height - border * 2}" 
+                        rx="${radius}" 
+                        fill="rgba(255,255,255,0.93)" 
+                        style="filter:blur(11px)" 
+                    />
+                </svg>`;
+
+                // Encode and set as href
+                // Use robust replacement to remove newlines for data URI
+                const encoded = encodeURIComponent(svg.replace(/\s+/g, " ")); 
+                filterImage.setAttribute('href', `data:image/svg+xml,${encoded}`);
             };
 
-            // SHADERS
-            const vertexShader = `
-                precision highp float;
-                void main() {
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                }
-            `;
+            // Initialize Observer to update map when dock resizes (on hover physics)
+            const observer = new ResizeObserver(updateFilter);
+            observer.observe(dockPanel);
+            
+            // Initial call
+            updateFilter();
+        }
 
+        // --- SILK SHADER BACKGROUND (Vanilla Three.js) ---
+        function initSilkShader() {
+            const container = document.getElementById('shader-background');
+            if (!container) return;
+
+            // SHADER CODE FROM USER
             const fragmentShader = `
-                precision highp float;
+                #define INVERT 1
 
                 uniform float iTime;
                 uniform vec3  iResolution;
-                uniform float animationSpeed;
+                uniform vec4  iMouse;
 
-                uniform bool enableTop;
-                uniform bool enableMiddle;
-                uniform bool enableBottom;
-
-                uniform int topLineCount;
-                uniform int middleLineCount;
-                uniform int bottomLineCount;
-
-                uniform float topLineDistance;
-                uniform float middleLineDistance;
-                uniform float bottomLineDistance;
-
-                uniform vec3 topWavePosition;
-                uniform vec3 middleWavePosition;
-                uniform vec3 bottomWavePosition;
-
-                uniform vec2 iMouse;
-                uniform bool interactive;
-                uniform float bendRadius;
-                uniform float bendStrength;
-                uniform float bendInfluence;
-
-                uniform bool parallax;
-                uniform float parallaxStrength;
-                uniform vec2 parallaxOffset;
-
-                uniform vec3 lineGradient[8];
-                uniform int lineGradientCount;
-
-                const vec3 BLACK = vec3(0.0);
-                const vec3 PINK  = vec3(233.0, 71.0, 245.0) / 255.0;
-                const vec3 BLUE  = vec3(47.0,  75.0, 162.0) / 255.0;
-
-                mat2 rotate(float r) {
-                    return mat2(cos(r), sin(r), -sin(r), cos(r));
+                float noise(vec2 p) {
+                    return smoothstep(-0.5, 0.9, sin((p.x - p.y) * 555.0) * sin(p.y * 1444.0)) - 0.4;
                 }
 
-                vec3 background_color(vec2 uv) {
-                    vec3 col = vec3(0.0);
-                    float y = sin(uv.x - 0.2) * 0.3 - 0.1;
-                    float m = uv.y - y;
-                    col += mix(BLUE, BLACK, smoothstep(0.0, 1.0, abs(m)));
-                    col += mix(PINK, BLACK, smoothstep(0.0, 1.0, abs(m - 0.8)));
-                    return col * 0.5;
+                float fabric(vec2 p) {
+                    const mat2 m = mat2(1.6, 1.2, -1.2, 1.6);
+                    float f = 0.4 * noise(p);
+                    f += 0.3 * noise(p = m * p);
+                    f += 0.2 * noise(p = m * p);
+                    return f + 0.1 * noise(m * p);
                 }
 
-                vec3 getLineColor(float t, vec3 baseColor) {
-                    if (lineGradientCount <= 0) {
-                        return baseColor;
-                    }
-                    vec3 gradientColor;
-                    if (lineGradientCount == 1) {
-                        gradientColor = lineGradient[0];
-                    } else {
-                        float clampedT = clamp(t, 0.0, 0.9999);
-                        float scaled = clampedT * float(lineGradientCount - 1);
-                        int idx = int(floor(scaled));
-                        float f = fract(scaled);
-                        int idx2 = min(idx + 1, lineGradientCount - 1);
-                        vec3 c1 = lineGradient[idx];
-                        vec3 c2 = lineGradient[idx2];
-                        gradientColor = mix(c1, c2, f);
-                    }
-                    return gradientColor * 0.5;
+                float silk(vec2 uv, float t) {
+                    float s = sin(5.0 * (uv.x + uv.y + cos(2.0 * uv.x + 5.0 * uv.y)) + sin(12.0 * (uv.x + uv.y)) - t);
+                    s = 0.7 + 0.3 * (s * s * 0.5 + s);
+                    s *= 0.9 + 0.6 * fabric(uv * min(iResolution.x, iResolution.y) * 0.0006);
+                    return s * 0.9 + 0.1;
                 }
 
-                float wave(vec2 uv, float offset, vec2 screenUv, vec2 mouseUv, bool shouldBend) {
-                    float time = iTime * animationSpeed;
-                    float x_offset    = offset;
-                    float x_movement = time * 0.1;
-                    float amp        = sin(offset + time * 0.2) * 0.3;
-                    float y          = sin(uv.x + x_offset + x_movement) * amp;
-
-                    if (shouldBend) {
-                        vec2 d = screenUv - mouseUv;
-                        float influence = exp(-dot(d, d) * bendRadius);
-                        float bendOffset = (mouseUv.y - screenUv.y) * influence * bendStrength * bendInfluence;
-                        y += bendOffset;
-                    }
-
-                    float m = uv.y - y;
-                    return 0.0175 / max(abs(m) + 0.01, 1e-3) + 0.01;
+                float silkd(vec2 uv, float t) {
+                    float xy = uv.x + uv.y;
+                    float d = (5.0 * (1.0 - 2.0 * sin(2.0 * uv.x + 5.0 * uv.y)) + 12.0 * cos(12.0 * xy)) * cos(5.0 * (cos(2.0 * uv.x + 5.0 * uv.y) + xy) + sin(12.0 * xy) - t);
+                    return 0.005 * d * (sign(d) + 3.0);
                 }
 
-                void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-                    vec2 baseUv = (2.0 * fragCoord - iResolution.xy) / iResolution.y;
-                    baseUv.y *= -1.0;
+                void mainImage(out vec4 fragColor, vec2 fragCoord) {
+                    float mr = min(iResolution.x, iResolution.y);
+                    vec2 uv = fragCoord / mr;
+
+                    float t = iTime;
+                    uv.y += 0.03 * sin(8.0 * uv.x - t);
+
+                    if (iMouse.z > 1.0)
+                        uv += smoothstep(0.5, 0.0, distance(iMouse.xy / mr, uv)) * 0.08;
                     
-                    if (parallax) {
-                        baseUv += parallaxOffset;
-                    }
+                    float s = sqrt(silk(uv, t));
+                    float d = silkd(uv, t);
 
-                    vec3 b = lineGradientCount > 0 ? vec3(0.0) : background_color(baseUv);
-                    vec3 col = b;
-
-                    vec2 mouseUv = vec2(0.0);
-                    if (interactive) {
-                        mouseUv = (2.0 * iMouse - iResolution.xy) / iResolution.y;
-                        mouseUv.y *= -1.0;
-                    }
+                    vec3 c = vec3(s);
+                    c += 0.7 * vec3(1, 0.83, 0.6) * d;
+                    c *= 1.0 - max(0.0, 0.8 * d);
                     
-                    if (enableBottom) {
-                        for (int i = 0; i < bottomLineCount; ++i) {
-                            float fi = float(i);
-                            float t = fi / max(float(bottomLineCount - 1), 1.0);
-                            vec3 lineCol = getLineColor(t, b);
-                            float angle = bottomWavePosition.z * log(length(baseUv) + 1.0);
-                            vec2 ruv = baseUv * rotate(angle);
-                            col += lineCol * wave(
-                                ruv + vec2(bottomLineDistance * fi + bottomWavePosition.x, bottomWavePosition.y),
-                                1.5 + 0.2 * fi, baseUv, mouseUv, interactive
-                            ) * 0.2;
-                        }
-                    }
+                    #if INVERT
+                        c = pow(c, 0.3 / vec3(0.52, 0.5, 0.4));
+                        c = 1.0 - c;
+                    #else
+                        c = pow(c, vec3(0.52, 0.5, 0.4));
+                    #endif
 
-                    if (enableMiddle) {
-                        for (int i = 0; i < middleLineCount; ++i) {
-                            float fi = float(i);
-                            float t = fi / max(float(middleLineCount - 1), 1.0);
-                            vec3 lineCol = getLineColor(t, b);
-                            float angle = middleWavePosition.z * log(length(baseUv) + 1.0);
-                            vec2 ruv = baseUv * rotate(angle);
-                            col += lineCol * wave(
-                                ruv + vec2(middleLineDistance * fi + middleWavePosition.x, middleWavePosition.y),
-                                2.0 + 0.15 * fi, baseUv, mouseUv, interactive
-                            ) * 0.5; // Added multiplier to reduce intensity
-                        }
-                    }
-
-                    if (enableTop) {
-                        for (int i = 0; i < topLineCount; ++i) {
-                            float fi = float(i);
-                            float t = fi / max(float(topLineCount - 1), 1.0);
-                            vec3 lineCol = getLineColor(t, b);
-                            float angle = topWavePosition.z * log(length(baseUv) + 1.0);
-                            vec2 ruv = baseUv * rotate(angle);
-                            ruv.x *= -1.0;
-                            col += lineCol * wave(
-                                ruv + vec2(topLineDistance * fi + topWavePosition.x, topWavePosition.y),
-                                1.0 + 0.2 * fi, baseUv, mouseUv, interactive
-                            ) * 0.1;
-                        }
-                    }
-
-                    fragColor = vec4(col, 1.0);
+                    fragColor = vec4(c, 1);
                 }
 
                 void main() {
@@ -1480,137 +1363,261 @@
                 }
             `;
 
-            // Helper
-            const hexToVec3 = (hex) => {
-                let value = hex.trim().replace('#','');
-                let r, g, b;
-                if (value.length === 3) {
-                    r = parseInt(value[0] + value[0], 16);
-                    g = parseInt(value[1] + value[1], 16);
-                    b = parseInt(value[2] + value[2], 16);
-                } else {
-                    r = parseInt(value.slice(0, 2), 16);
-                    g = parseInt(value.slice(2, 4), 16);
-                    b = parseInt(value.slice(4, 6), 16);
+            const vertexShader = `
+                void main() {
+                    gl_Position = vec4( position, 1.0 );
                 }
-                return new THREE.Vector3(r / 255, g / 255, b / 255);
-            };
+            `;
 
             const scene = new THREE.Scene();
-            const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-            camera.position.z = 1;
+            const camera = new THREE.OrthographicCamera( - 1, 1, 1, - 1, 0, 1 );
 
-            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            renderer.setSize(container.clientWidth, container.clientHeight);
-            container.appendChild(renderer.domElement);
+            const renderer = new THREE.WebGLRenderer({ alpha: true }); // Allow transparency
+            renderer.setSize( container.clientWidth, container.clientHeight );
+            container.appendChild( renderer.domElement );
 
             const uniforms = {
                 iTime: { value: 0 },
-                iResolution: { value: new THREE.Vector3(renderer.domElement.width, renderer.domElement.height, 1) },
-                animationSpeed: { value: config.animationSpeed },
-                enableTop: { value: config.enabledWaves.includes('top') },
-                enableMiddle: { value: config.enabledWaves.includes('middle') },
-                enableBottom: { value: config.enabledWaves.includes('bottom') },
-                topLineCount: { value: config.lineCount[0] },
-                middleLineCount: { value: config.lineCount[0] },
-                bottomLineCount: { value: config.lineCount[0] },
-                topLineDistance: { value: config.lineDistance[0] * 0.01 },
-                middleLineDistance: { value: config.lineDistance[0] * 0.01 },
-                bottomLineDistance: { value: config.lineDistance[0] * 0.01 },
-                topWavePosition: { value: new THREE.Vector3(config.topWavePosition.x, config.topWavePosition.y, config.topWavePosition.rotate) },
-                middleWavePosition: { value: new THREE.Vector3(config.middleWavePosition.x, config.middleWavePosition.y, config.middleWavePosition.rotate) },
-                bottomWavePosition: { value: new THREE.Vector3(config.bottomWavePosition.x, config.bottomWavePosition.y, config.bottomWavePosition.rotate) },
-                iMouse: { value: new THREE.Vector2(-1000, -1000) },
-                interactive: { value: config.interactive },
-                bendRadius: { value: config.bendRadius },
-                bendStrength: { value: config.bendStrength },
-                bendInfluence: { value: 0 },
-                parallax: { value: config.parallax },
-                parallaxStrength: { value: config.parallaxStrength },
-                parallaxOffset: { value: new THREE.Vector2(0, 0) },
-                lineGradient: { value: Array(8).fill(new THREE.Vector3(1, 1, 1)) },
-                lineGradientCount: { value: 0 }
+                iResolution: { value: new THREE.Vector3(container.clientWidth, container.clientHeight, 1) },
+                iMouse: { value: new THREE.Vector4() } // xy = current, zw = click
             };
 
-            if (config.linesGradient.length > 0) {
-                const stops = config.linesGradient.slice(0, 8);
-                uniforms.lineGradientCount.value = stops.length;
-                stops.forEach((hex, i) => {
-                    uniforms.lineGradient.value[i] = hexToVec3(hex);
-                });
-            }
-
-            const geometry = new THREE.PlaneGeometry(2, 2);
             const material = new THREE.ShaderMaterial({
                 uniforms: uniforms,
                 vertexShader: vertexShader,
                 fragmentShader: fragmentShader
             });
-            scene.add(new THREE.Mesh(geometry, material));
 
-            const clock = new THREE.Clock();
-            const targetMouse = new THREE.Vector2(-1000, -1000);
-            const currentMouse = new THREE.Vector2(-1000, -1000);
-            let targetInfluence = 0;
-            let currentInfluence = 0;
-            const targetParallax = new THREE.Vector2(0, 0);
-            const currentParallax = new THREE.Vector2(0, 0);
+            const geometry = new THREE.PlaneGeometry( 2, 2 );
+            const mesh = new THREE.Mesh( geometry, material );
+            scene.add( mesh );
+
+            const startTime = Date.now();
 
             function animate() {
-                uniforms.iTime.value = clock.getElapsedTime();
-
-                if (config.interactive) {
-                    currentMouse.lerp(targetMouse, config.mouseDamping);
-                    uniforms.iMouse.value.copy(currentMouse);
-                    
-                    currentInfluence += (targetInfluence - currentInfluence) * config.mouseDamping;
-                    uniforms.bendInfluence.value = currentInfluence;
-                }
-
-                if (config.parallax) {
-                    currentParallax.lerp(targetParallax, config.mouseDamping);
-                    uniforms.parallaxOffset.value.copy(currentParallax);
-                }
-
-                renderer.render(scene, camera);
-                requestAnimationFrame(animate);
+                requestAnimationFrame( animate );
+                uniforms.iTime.value = (Date.now() - startTime) * 0.001;
+                renderer.render( scene, camera );
             }
 
-            const handleMove = (e) => {
-                const rect = renderer.domElement.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                const dpr = renderer.getPixelRatio();
-
-                targetMouse.set(x * dpr, (rect.height - y) * dpr);
-                targetInfluence = 1.0;
-
-                if (config.parallax) {
-                    const centerX = rect.width / 2;
-                    const centerY = rect.height / 2;
-                    const offsetX = (x - centerX) / rect.width;
-                    const offsetY = -(y - centerY) / rect.height;
-                    targetParallax.set(offsetX * config.parallaxStrength, offsetY * config.parallaxStrength);
-                }
-            };
-
-            const handleLeave = () => {
-                targetInfluence = 0.0;
-            };
-
-            const handleResize = () => {
-                const w = container.clientWidth;
-                const h = container.clientHeight;
-                renderer.setSize(w, h);
-                uniforms.iResolution.value.set(w * renderer.getPixelRatio(), h * renderer.getPixelRatio(), 1);
-            };
-
-            window.addEventListener('resize', handleResize);
-            document.addEventListener('mousemove', handleMove);
-            document.addEventListener('mouseleave', handleLeave);
-
             animate();
+
+            // Handle Resize
+            window.addEventListener( 'resize', onWindowResize, false );
+            function onWindowResize() {
+                renderer.setSize( container.clientWidth, container.clientHeight );
+                uniforms.iResolution.value.set( container.clientWidth, container.clientHeight, 1 );
+            }
+
+            // Handle Mouse Interactions for the Shader
+            let isMouseDown = false;
+            
+            document.addEventListener('mousemove', (e) => {
+                const rect = renderer.domElement.getBoundingClientRect();
+                const x = e.clientX - rect.left; 
+                const y = container.clientHeight - (e.clientY - rect.top); // Flip Y for shader coords
+                
+                if(isMouseDown) {
+                    uniforms.iMouse.value.x = x;
+                    uniforms.iMouse.value.y = y;
+                }
+            });
+
+            document.addEventListener('mousedown', (e) => {
+                isMouseDown = true;
+                const rect = renderer.domElement.getBoundingClientRect();
+                const x = e.clientX - rect.left; 
+                const y = container.clientHeight - (e.clientY - rect.top);
+                
+                uniforms.iMouse.value.x = x;
+                uniforms.iMouse.value.y = y;
+                uniforms.iMouse.value.z = x; // Click pos X
+                uniforms.iMouse.value.w = y; // Click pos Y
+            });
+
+            document.addEventListener('mouseup', () => {
+                isMouseDown = false;
+                // In ShaderToy, z/w become negative to indicate release, but often just tracking click state is enough
+                uniforms.iMouse.value.z = -Math.abs(uniforms.iMouse.value.z);
+                uniforms.iMouse.value.w = -Math.abs(uniforms.iMouse.value.w);
+            });
+        }
+
+        // --- TEXT PARTICLE EFFECT (Inspira Style) ---
+        function initTextParticles() {
+            const canvas = document.getElementById('text-particle-canvas');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+            let animationId;
+            
+            // Configuration
+            const particleSize = 1.5; // Size of dots
+            const mouseRadius = 80; // Radius of interaction
+            const mouseForce = 20; // How hard they push away
+            const returnSpeed = 0.08; // How fast they return (0-1)
+            const friction = 0.9; // Movement dampening
+            
+            let mouse = { x: null, y: null };
+            
+            // Font settings
+            const fontBaseSize = 100; // Base font size for calculation
+            const fontFamily = "'Cinzel', serif";
+            
+            class Particle {
+                constructor(x, y) {
+                    this.x = Math.random() * canvas.width; // Random start for effect
+                    this.y = Math.random() * canvas.height;
+                    this.baseX = x; // Target position (text shape)
+                    this.baseY = y;
+                    this.density = (Math.random() * 30) + 1;
+                    this.vx = 0;
+                    this.vy = 0;
+                }
+                
+                draw() {
+                    ctx.fillStyle = 'white';
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, particleSize, 0, Math.PI * 2);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                
+                update() {
+                    // Mouse Interaction
+                    let dx = mouse.x - this.x;
+                    let dy = mouse.y - this.y;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+                    let forceDirectionX = dx / distance;
+                    let forceDirectionY = dy / distance;
+                    let maxDistance = mouseRadius;
+                    let force = (maxDistance - distance) / maxDistance;
+                    let directionX = forceDirectionX * force * this.density;
+                    let directionY = forceDirectionY * force * this.density;
+                    
+                    if (distance < mouseRadius) {
+                        // Push away
+                        this.vx -= directionX * 2; // Multiplier for punchiness
+                        this.vy -= directionY * 2;
+                    } else {
+                        // Return to base
+                        if (this.x !== this.baseX) {
+                            let dx = this.x - this.baseX;
+                            this.vx -= dx * returnSpeed; // Ease back
+                        }
+                        if (this.y !== this.baseY) {
+                            let dy = this.y - this.baseY;
+                            this.vy -= dy * returnSpeed;
+                        }
+                    }
+                    
+                    // Apply Velocity & Friction
+                    this.vx *= friction;
+                    this.vy *= friction;
+                    
+                    this.x += this.vx;
+                    this.y += this.vy;
+                }
+            }
+            
+            function init() {
+                particles = [];
+                
+                // 1. Setup Canvas Size
+                const container = document.getElementById('particle-text-container');
+                canvas.width = container.offsetWidth;
+                canvas.height = container.offsetHeight;
+                
+                // 2. Create Offscreen Canvas for Text Data
+                // This allows us to "read" the pixels of the text without showing it
+                const textCtx = document.createElement('canvas').getContext('2d');
+                textCtx.canvas.width = canvas.width;
+                textCtx.canvas.height = canvas.height;
+                
+                // 3. Draw Text on Offscreen Canvas
+                // Responsive Font Size
+                let fontSize = 80;
+                if (canvas.width < 768) fontSize = 40; // Mobile
+                else if (canvas.width < 1024) fontSize = 60; // Tablet
+                
+                textCtx.font = `700 ${fontSize}px ${fontFamily}`;
+                textCtx.fillStyle = 'white';
+                textCtx.textAlign = 'center';
+                textCtx.textBaseline = 'middle';
+                
+                // Handle Multiline for Mobile if needed, or single line
+                const text1 = "SAWON";
+                const text2 = "MUKHERJEE";
+                
+                if (canvas.width < 768) {
+                    // Stacked on Mobile
+                    textCtx.fillText(text1, canvas.width / 2, canvas.height / 2 - fontSize * 0.6);
+                    textCtx.fillText(text2, canvas.width / 2, canvas.height / 2 + fontSize * 0.6);
+                } else {
+                    // Single Line on Desktop
+                    textCtx.fillText(text1 + " " + text2, canvas.width / 2, canvas.height / 2);
+                }
+                
+                // 4. Scan Pixel Data
+                // We scan the canvas. If a pixel is non-transparent (alpha > 128), we place a particle.
+                const textCoordinates = textCtx.getImageData(0, 0, canvas.width, canvas.height);
+                
+                // Optimization: Don't scan every single pixel. Skip steps.
+                // High step = fewer particles (faster). Low step = dense particles (slower).
+                const step = 4; 
+                
+                for (let y = 0; y < textCoordinates.height; y += step) {
+                    for (let x = 0; x < textCoordinates.width; x += step) {
+                        // Pixel data array is [r, g, b, a, r, g, b, a...]
+                        // (y * 4 * width) gets us to the row. (x * 4) gets us to the pixel. + 3 is the Alpha channel.
+                        if (textCoordinates.data[(y * 4 * textCoordinates.width) + (x * 4) + 3] > 128) {
+                            particles.push(new Particle(x, y));
+                        }
+                    }
+                }
+            }
+            
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                for (let i = 0; i < particles.length; i++) {
+                    particles[i].draw();
+                    particles[i].update();
+                }
+                animationId = requestAnimationFrame(animate);
+            }
+            
+            // Mouse Handlers
+            // Track mouse relative to canvas
+            const container = document.getElementById('home'); // Use section for wider hit area
+            
+            container.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                mouse.x = e.clientX - rect.left;
+                mouse.y = e.clientY - rect.top;
+            });
+            
+            container.addEventListener('mouseleave', () => {
+                mouse.x = null;
+                mouse.y = null;
+            });
+            
+            // Resize Handler
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    cancelAnimationFrame(animationId);
+                    init();
+                    animate();
+                }, 100);
+            });
+            
+            // Wait for fonts to load before initializing
+            document.fonts.ready.then(() => {
+                init();
+                animate();
+            });
         }
 
         // --- LOADING SCREEN LOGIC ---
@@ -1759,6 +1766,12 @@
             const container = document.querySelector('#main-scroll-container');
             if (!container) return;
 
+            // Check if library is loaded
+            if (typeof Scrollbar === 'undefined') {
+                console.warn('Scrollbar library not loaded yet');
+                return;
+            }
+
             const scrollbar = Scrollbar.init(container, {
                 damping: 0.05,
                 renderByPixels: true,
@@ -1784,18 +1797,19 @@
             });
         }
 
-        // --- TARGET CURSOR LOGIC REMOVED ---
-        // initTargetCursor function deleted
-
         document.addEventListener('DOMContentLoaded', () => {
             initLoadingScreen(); // Start Loading Sequence
-            // initCubeInteraction removed
             renderProjects();
             initChromaGrid(); // New Chroma Grid for Certs
-            initFloatingLines(); // Previous Background
-            initDock(); 
-            initSmoothScroll(); // Smooth Scrollbar
-            // initTargetCursor removed
+            
+            // Short delay to ensure libraries load
+            setTimeout(() => {
+                initSilkShader(); // Restore Silk Shader Background
+                initTextParticles(); // NEW: Particle Text Effect
+                initDock(); 
+                initSmoothScroll(); 
+                initLiquidGlass(); // New Effect
+            }, 100);
         });
 
     </script>
