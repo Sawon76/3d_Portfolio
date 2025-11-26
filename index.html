@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sawon M. Portfolio</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/smooth-scrollbar/8.8.4/smooth-scrollbar.js"></script>
+
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;700&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="./style_hidden.css">
+</head>
+<body class="font-sans relative min-h-screen">
+
+    <svg class="svg-filter">
+      <defs>
+        <filter
+          id="liquidGlass"
+          color-interpolation-filters="sRGB"
+        >
+          <feImage
+            id="liquid-displacement-image"
+            x="0"
+            y="0"
+            width="100%"
+            height="100%"
+            result="map"
+          />
+          <feDisplacementMap
+            id="redchannel"
+            in="SourceGraphic"
+            in2="map"
+            xChannelSelector="R"
+            yChannelSelector="B"
+            scale="0" 
+            result="dispRed"
+          />
+          <feColorMatrix
+            in="dispRed"
+            type="matrix"
+            values="1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0"
+            result="red"
+          />
+          <feDisplacementMap
+            id="greenchannel"
+            in="SourceGraphic"
+            in2="map"
+            xChannelSelector="R"
+            yChannelSelector="B"
+            scale="10" 
+            result="dispGreen"
+          />
+          <feColorMatrix
+            in="dispGreen"
+            type="matrix"
+            values="0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0"
+            result="green"
+          />
+          <feDisplacementMap
+            id="bluechannel"
+            in="SourceGraphic"
+            in2="map"
+            xChannelSelector="R"
+            yChannelSelector="B"
+            scale="20" 
+            result="dispBlue"
+          />
+          <feColorMatrix
+            in="dispBlue"
+            type="matrix"
+            values="0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 0"
+            result="blue"
+          />
+          <feBlend
+            in="red"
+            in2="green"
+            mode="screen"
+            result="rg"
+          />
+          <feBlend
+            in="rg"
+            in2="blue"
+            mode="screen"
+            result="output"
+          />
+          <feGaussianBlur stdDeviation="11" />
+        </filter>
+      </defs>
+    </svg>
+
+    <div id="loading-screen">
+        <canvas id="vortex-canvas"></canvas>
+        
+        <div class="loader-content">
+            <div class="loader-bar-container">
+                <div id="loader-bar"></div>
+            </div>
+            
+            <div id="loader-name">SAWON M.</div>
+        </div>
+    </div>
+
+    <div id="shader-background"></div>
+
+    <div class="dock-container">
+        <div class="dock-panel">
+            <a href="#home" class="dock-item">
+                <i data-lucide="home" class="dock-icon"></i>
+                <span class="dock-label">Home</span>
+            </a>
+            
+            <button onclick="openResumeModal()" class="dock-item">
+                <i data-lucide="file-text" class="dock-icon"></i>
+                <span class="dock-label">CV / Resume</span>
+            </button>
+
+            <a href="#projects" class="dock-item">
+                <i data-lucide="briefcase" class="dock-icon"></i>
+                <span class="dock-label">Projects</span>
+            </a>
+
+            <a href="#certificates" class="dock-item">
+                <i data-lucide="award" class="dock-icon"></i>
+                <span class="dock-label">Certificates</span>
+            </a>
+
+            <a href="#achievements" class="dock-item">
+                <i data-lucide="trophy" class="dock-icon"></i>
+                <span class="dock-label">Achievements</span>
+            </a>
+
+            <a href="#research" class="dock-item">
+                <i data-lucide="microscope" class="dock-icon"></i>
+                <span class="dock-label">Research</span>
+            </a>
+
+            <a href="#contact" class="dock-item">
+                <i data-lucide="mail" class="dock-icon"></i>
+                <span class="dock-label">Contact</span>
+            </a>
+        </div>
+    </div>
+    
+    <div class="toast-container" id="toast-container"></div>
+
+    <main id="main-scroll-container" style="width: 100%; height: 100vh;">
+        <section id="home" class="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-24 md:pt-20">
+            
+            <div id="grid-pattern-wrap" class="absolute inset-0 overflow-hidden z-[-2] pointer-events-none">
+                <canvas id="interactive-grid-canvas" class="w-full h-[200%] -translate-y-[25%] skew-y-12 opacity-30" style="mask-image: radial-gradient(350px circle at center, white, transparent); -webkit-mask-image: radial-gradient(350px circle at center, white, transparent);"></canvas>
+            </div>
+
+            <div class="relative z-20 mb-8 animate-float">
+                <div class="relative w-40 h-40 md:w-48 md:h-48 rounded-full overflow-hidden border-2 border-industrial-accent/50 shadow-[0_0_30px_rgba(56,189,248,0.6)] group bg-black">
+                    <img src="me.jpg" 
+                         alt="Profile Photo" 
+                         class="w-full h-full object-cover hover:scale-110 transition-transform duration-700 ease-in-out">
+                </div>
+            </div>
+
+            <div class="text-center z-20 mt-6 md:mt-8 space-y-2 px-4 relative w-full flex flex-col items-center">
+                <p class="text-industrial-accent text-[10px] md:text-xs lg:text-sm font-mono uppercase tracking-[0.2em] md:tracking-[0.3em] animate-pulse mb-2 md:mb-4 text-center">
+                    Studying Industrial Engineering and Management
+                </p>
+                
+                <div id="particle-text-container" class="relative w-full h-[150px] md:h-[180px] lg:h-[200px] flex items-center justify-center overflow-visible z-20">
+                    <canvas id="text-particle-canvas"></canvas>
+                </div>
+                
+                <h1 class="sr-only">SAWON MUKHERJEE</h1>
+
+                <p class="text-glass-textMuted text-[10px] md:text-xs lg:text-sm font-mono uppercase tracking-[0.15em] md:tracking-[0.2em] mt-2 md:mt-4 max-w-[90%] md:max-w-2xl mx-auto text-center">
+                    3D CAD Modeling • Simulation • Optimization
+                </p>
+            </div>
+
+            <div class="flex items-center justify-center w-full mt-8 md:mt-12 z-20">
+                <button onclick="openResumeModal()" class="group relative px-6 py-2 md:px-8 md:py-3 overflow-hidden rounded-full bg-transparent border border-white/30 text-white transition-all hover:border-industrial-accent hover:text-industrial-accent cursor-pointer">
+                    <span class="absolute top-0 left-0 w-full h-full bg-white/5 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-500"></span>
+                    <span class="relative text-xs md:text-sm font-medium tracking-widest uppercase flex items-center">
+                        CV / Resume <i data-lucide="file-text" class="ml-2 w-3 h-3 md:w-4 md:h-4"></i>
+                    </span>
+                </button>
+            </div>
+
+            <div class="absolute bottom-24 md:bottom-32 left-1/2 transform -translate-x-1/2 animate-bounce opacity-50 z-10">
+                <span class="block w-[1px] h-8 md:h-12 bg-gradient-to-b from-transparent via-white to-transparent"></span>
+            </div>
+        </section>
+
+        <section id="projects" class="py-12 md:py-24 relative">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex flex-col md:flex-row justify-between items-end mb-8 md:mb-12">
+                    <div class="w-full md:w-auto text-center md:text-left">
+                        <p class="mt-2 text-2xl md:text-3xl leading-8 font-extrabold tracking-tight text-white sm:text-4xl drop-shadow-lg">
+                            SolidWorks Projects
+                        </p>
+                    </div>
+                    <div class="mt-4 md:mt-0 w-full md:w-auto text-center md:text-right">
+                        <span class="text-glass-textMuted text-xs md:text-sm font-mono bg-white/5 px-3 py-1 rounded-full border border-white/10 backdrop-blur-sm inline-block">Recent works from university & personal labs</span>
+                    </div>
+                </div>
+
+                <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+                </div>
+            
+            <div class="mt-8 md:mt-12 text-center">
+                <a href="https://grabcad.com/sawon.mukherjee-1" class="inline-flex items-center px-6 py-2 md:px-8 md:py-3 border border-white/20 shadow-lg text-sm md:text-base font-medium rounded-2xl text-gray-200 glass-panel hover:bg-white/10 hover:text-white hover:scale-105 transition-all" style="backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px);">
+                    <i data-lucide="github" class="mr-2 w-4 h-4 md:w-5 md:h-5"></i>
+                    See more on GrabCAD
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <section id="certificates" class="py-12 md:py-24 relative overflow-hidden">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                <div class="text-center mb-10 md:mb-16">
+                    <p class="mt-2 text-2xl md:text-3xl leading-8 font-extrabold tracking-tight text-white sm:text-4xl drop-shadow-lg">
+                        Certifications & Achievements
+                    </p>
+                </div>
+
+                <div id="chroma-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+                    </div>
+            </div>
+        </section>
+
+        <section id="achievements" class="py-12 md:py-24 relative">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                <div class="text-center mb-10 md:mb-16">
+                    <p class="mt-2 text-2xl md:text-3xl leading-8 font-extrabold tracking-tight text-white sm:text-4xl drop-shadow-lg">
+                        Awards & Recognition
+                    </p>
+                </div>
+                
+                <div id="achievements-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+                    </div>
+            </div>
+        </section>
+
+        <section id="research" class="py-12 md:py-24 relative">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                <div class="text-center mb-10 md:mb-16">
+                    <p class="mt-2 text-2xl md:text-3xl leading-8 font-extrabold tracking-tight text-white sm:text-4xl drop-shadow-lg">
+                        Research & Publications
+                    </p>
+                </div>
+                
+                <div id="research-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+                    </div>
+            </div>
+        </section>
+
+        <section id="contact" class="py-12 md:py-24 relative border-t border-white/5" style="padding-bottom: 150px;">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-16">
+                    <div>
+                        <h2 class="text-base text-industrial-accent font-semibold tracking-wide uppercase font-mono drop-shadow-md">Contact</h2>
+                        <p class="mt-2 text-2xl md:text-3xl leading-8 font-extrabold tracking-tight text-white sm:text-4xl mb-4 md:mb-6 drop-shadow-lg">
+                            Let's Build Something
+                        </p>
+                        <p class="text-base md:text-lg text-glass-textMuted mb-6 md:mb-8">
+                            Looking for an internship, project collaboration, or full-time opportunity? I'm always open to discussing new industrial engineering challenges.
+                        </p>
+                        
+                        <div class="space-y-4 md:space-y-6">
+                            <div class="flex items-center group">
+                                <div class="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/5 flex items-center justify-center mr-4 group-hover:bg-industrial-accent/20 transition-colors border border-white/10 shrink-0">
+                                    <i data-lucide="mail" class="w-4 h-4 md:w-5 md:h-5 text-industrial-accent"></i>
+                                </div>
+                                <span class="text-sm md:text-base text-gray-300 group-hover:text-white transition-colors break-all">sawonmukherjee1@gmail.com</span>
+                            </div>
+                            <div class="flex items-center group">
+                                <div class="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/5 flex items-center justify-center mr-4 group-hover:bg-industrial-accent/20 transition-colors border border-white/10 shrink-0">
+                                    <i data-lucide="map-pin" class="w-4 h-4 md:w-5 md:h-5 text-industrial-accent"></i>
+                                </div>
+                                <span class="text-sm md:text-base text-gray-300 group-hover:text-white transition-colors">Rangpur, Bangladesh</span>
+                            </div>
+                            
+                        </div>
+
+                        <div class="mt-8 flex space-x-4">
+                            <a href="https://www.linkedin.com/in/sawonmukherjee/" class="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-industrial-accent hover:text-white hover:-translate-y-1 transition-all text-gray-400 backdrop-blur-sm shadow-lg">
+                                <i data-lucide="linkedin" class="w-4 h-4 md:w-5 md:h-5"></i>
+                            </a>
+                            <a href="https://github.com/Sawon76" class="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-industrial-accent hover:text-white hover:-translate-y-1 transition-all text-gray-400 backdrop-blur-sm shadow-lg">
+                                <i data-lucide="github" class="w-4 h-4 md:w-5 md:h-5"></i>
+                            </a>
+                            <a href="https://www.instagram.com/sawon.mukherjee.76/" class="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-industrial-accent hover:text-white hover:-translate-y-1 transition-all text-gray-400 backdrop-blur-sm shadow-lg">
+                                <i data-lucide="instagram" class="w-4 h-4 md:w-5 md:h-5"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel rounded-3xl relative tech-panel overflow-hidden h-[500px] md:h-[650px] w-full">
+                        <iframe 
+                            src="https://forms.fillout.com/t/3MJjjEQYdcus" 
+                            width="100%" 
+                            style="height: calc(100% + 60px);" 
+                            frameborder="0" 
+                            marginheight="0" 
+                            marginwidth="0" 
+                            title="Contact Me"
+                            class="w-full"
+                        >Loading…</iframe>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="resume-modal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" aria-hidden="true" onclick="closeResumeModal()"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="glass-panel inline-block align-bottom rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle w-full max-w-[95%] sm:max-w-lg border border-white/10 mb-4 sm:mb-0">
+                <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-white/10 sm:mx-0 sm:h-10 sm:w-10 border border-white/20">
+                            <i data-lucide="file-text" class="text-white w-6 h-6"></i>
+                        </div>
+                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                            <h3 class="text-lg leading-6 font-bold text-white" id="modal-title">Download Resume / CV</h3>
+                            <div class="mt-2">
+                                <p class="text-sm text-gray-300">
+                                    Choose the format you would like to download.
+                                </p>
+                                <div class="mt-4 space-y-3">
+                                    <a href="https://drive.google.com/file/d/1uXfkZdNjgboP_TI6CVHeNDKTdRF2imZg/view?usp=sharing" target="_blank" class="flex items-center justify-between w-full px-4 py-3 glass-input rounded-xl hover:bg-white/10 transition-colors text-gray-200">
+                                        <span>Full CV (Academic)</span>
+                                        <i data-lucide="download" class="w-4 h-4 text-industrial-accent"></i>
+                                    </a>
+                                    <a href="https://drive.google.com/file/d/1uXfkZdNjgboP_TI6CVHeNDKTdRF2imZg/view?usp=sharing" target="_blank" class="flex items-center justify-between w-full px-4 py-3 glass-input rounded-xl hover:bg-white/10 transition-colors text-gray-200">
+                                        <span>Resume (1 Page Summary)</span>
+                                        <i data-lucide="download" class="w-4 h-4 text-industrial-accent"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-black/20 px-4 py-3 sm:px-6 flex justify-center">
+                    <button type="button" class="inline-flex justify-center rounded-xl border border-white/20 shadow-sm px-6 py-2 bg-white/10 text-base font-medium text-white hover:bg-white/20 focus:outline-none sm:text-sm backdrop-blur-sm transition-all" onclick="closeResumeModal()">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="model-modal" class="hidden fixed inset-0 z-[100] overflow-hidden" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-black/80 backdrop-blur-md transition-opacity" onclick="close3DViewer()"></div>
+        <div class="absolute inset-0 pointer-events-none flex items-center justify-center p-4">
+            <div class="pointer-events-auto relative w-full h-full max-w-[95%] sm:max-w-6xl max-h-[80vh] glass-panel rounded-3xl border border-white/20 shadow-2xl overflow-hidden flex flex-col">
+                <div class="flex justify-between items-center p-4 border-b border-white/10 bg-white/5">
+                    <h3 id="model-title" class="text-lg font-bold text-white flex items-center">
+                        <i data-lucide="box" class="mr-2 text-industrial-accent"></i> 
+                        <span>3D View</span>
+                    </h3>
+                    <button onclick="close3DViewer()" class="p-2 rounded-full hover:bg-white/10 text-gray-300 hover:text-white transition-colors">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+                <div class="flex-1 relative bg-gradient-to-b from-gray-900 to-black">
+                    <model-viewer 
+                        id="main-viewer"
+                        src="" 
+                        alt="A 3D model" 
+                        auto-rotate 
+                        camera-controls 
+                        shadow-intensity="1"
+                        exposure="1"
+                        loading="eager"
+                        poster="https://via.placeholder.com/400x300.png?text=Loading+3D+Model..."
+                        class="w-full h-full">
+                        <div class="absolute bottom-4 right-4 bg-black/50 backdrop-blur-sm rounded-lg px-3 py-2 text-xs text-white border border-white/10 pointer-events-none hidden md:block">
+                            Left Click to Rotate • Right Press & Hold to Drag • Scroll to Zoom
+                        </div>
+                    </model-viewer>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="pdf-modal" class="hidden fixed inset-0 z-[100] overflow-hidden" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-black/90 backdrop-blur-md transition-opacity" onclick="closePdfViewer()"></div>
+        <div class="absolute inset-0 pointer-events-none flex items-center justify-center p-4">
+            <div class="pointer-events-auto relative w-full h-full max-w-[95%] sm:max-w-5xl max-h-[85vh] glass-panel rounded-3xl border border-white/20 shadow-2xl overflow-hidden flex flex-col">
+                
+                <div class="flex justify-between items-center p-4 border-b border-white/10 bg-white/5">
+                    <h3 class="text-lg font-bold text-white flex items-center">
+                        <i data-lucide="file-text" class="mr-2 text-industrial-accent"></i> 
+                        <span>Certificate Viewer</span>
+                    </h3>
+                    <button onclick="closePdfViewer()" class="p-2 rounded-full hover:bg-white/10 text-gray-300 hover:text-white transition-colors">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+
+                <div id="pdf-controls" class="flex items-center justify-center gap-4 p-2 bg-black/40 border-b border-white/10 text-white text-sm">
+                    <button id="pdf-prev" class="px-3 py-1 rounded hover:bg-white/10 disabled:opacity-50">Previous</button>
+                    <span>Page <span id="pdf-page-num">1</span> / <span id="pdf-page-count">--</span></span>
+                    <button id="pdf-next" class="px-3 py-1 rounded hover:bg-white/10 disabled:opacity-50">Next</button>
+                </div>
+
+                <div class="flex-1 bg-gray-900 relative overflow-auto flex justify-center p-4" id="pdf-render-container">
+                    <canvas id="pdf-canvas" class="shadow-2xl" oncontextmenu="return false;"></canvas>
+                    
+                    <iframe id="pdf-frame" src="" class="hidden w-full h-full border-0" allow="autoplay"></iframe>
+                    
+                    <div id="pdf-loader" class="absolute inset-0 flex items-center justify-center bg-black/50 z-10 hidden">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
